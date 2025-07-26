@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Family Relationship Chatbot - Home{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <section class="app-options">
+        <div class="logo-container">
+            <img src="/static/css/images/Logo.png" alt="Family Chatbot Logo" class="app-logo">
+        </div>
+        <div class="options-grid small-buttons">
+            <a href="/load-knowledge" class="option-card primary">
+                <div class="option-icon">📚</div>
+                <h3>Resume Last Chat</h3>
+                <p>Pick up your last conversation and knowledge base instantly.</p>
+            </a>
+            
+            <a href="/new-chat" class="option-card primary">
+                <div class="option-icon">💬</div>
+                <h3>Start New Chat</h3>
+                <p>Begin a new family relationship chat from scratch.</p>
+            </a>
+            
+            <button onclick="scrollToAbout()" class="option-card primary">
+                <div class="option-icon">ℹ️</div>
+                <h3>About</h3>
+                <p>See what this chatbot can do and how it works.</p>
+            </button>
+        </div>
+    </section>
+
+    <section id="about-section" class="app-description">
+        <h2>About This Application</h2>
+        <p>
+            Welcome to the Family Relationship Chatbot, an intelligent conversational system that understands 
+            and processes family relationships using logic-based inference. This chatbot leverages PROLOG as 
+            its inference engine to maintain a knowledge base of family relationships and answer complex queries 
+            about them.
+        </p>
+        
+        <div class="features">
+            <div class="feature-item">
+                <h3>🧠 Intelligent Inference</h3>
+                <p>Uses PROLOG's logical reasoning to infer relationships that weren't explicitly stated</p>
+            </div>
+            <div class="feature-item">
+                <h3>👨‍👩‍👧‍👦 Family Relationships</h3>
+                <p>Understands complex family structures including siblings, parents, grandparents, aunts, uncles, and more</p>
+            </div>
+            <div class="feature-item">
+                <h3>💬 Natural Conversation</h3>
+                <p>Accepts statements to learn new facts and answers questions about family relationships</p>
+            </div>
+        </div>
+
+        <div class="capabilities">
+            <h3>What the Chatbot Can Do:</h3>
+            <ul>
+                <li><strong>Learn from statements:</strong> "Alice is the mother of Bob"</li>
+                <li><strong>Answer questions:</strong> "Is Alice a grandmother of Charlie?"</li>
+                <li><strong>Infer relationships:</strong> Automatically deduce grandfather, sibling, and other relationships</li>
+                <li><strong>Validate feasibility:</strong> Detect impossible relationships and contradictions</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<script>
+function scrollToAbout() {
+    document.getElementById('about-section').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+}
+</script>
+{% endblock %}

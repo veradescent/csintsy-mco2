@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Family Relationship Chatbot - Chat{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <header class="chat-header">
+        <h1>Family Relationship Chatbot</h1>
+        <div class="chat-mode">
+            {% if mode == 'load' %}
+                <span class="mode-badge load">Knowledge Base Loaded</span>
+            {% else %}
+                <span class="mode-badge new">New Chat Session</span>
+            {% endif %}
+        </div>
+        <a href="/" class="back-button">← Back to Home</a>
+    </header>
+
+    <div class="chat-area">
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <div class="message-content">
+                    <strong>Chatbot:</strong> Hello! I'm ready to learn about family relationships and answer your questions. 
+                    You can tell me facts like "Alice is the mother of Bob" or ask questions like "Is Alice a grandmother of Charlie?"
+                </div>
+            </div>
+            
+            {% if user_input and response %}
+            <div class="message user-message">
+                <div class="message-content">
+                    <strong>You:</strong> {{ user_input }}
+                </div>
+            </div>
+            <div class="message bot-message">
+                <div class="message-content">
+                    <strong>Chatbot:</strong> {{ response }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <form class="chat-input-form" method="POST" action="/chat">
+            <div class="input-group">
+                <input type="text" name="message" placeholder="Type your message here..." required class="chat-input">
+                <button type="submit" class="send-button">Send</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="chat-help">
+        <details>
+            <summary>Need Help? Click here for example prompts</summary>
+            <div class="help-content">
+                <h4>Example Statements:</h4>
+                <ul>
+                    <li>"Alice and Bob are siblings."</li>
+                    <li>"John is the father of Mary."</li>
+                    <li>"Sarah is a sister of Tom."</li>
+                </ul>
+                <h4>Example Questions:</h4>
+                <ul>
+                    <li>"Is Alice a grandmother of Charlie?"</li>
+                    <li>"Who are the children of John?"</li>
+                    <li>"Are Bob and Mary siblings?"</li>
+                </ul>
+            </div>
+        </details>
+    </div>
+</div>
+{% endblock %}

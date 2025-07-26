@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Family Relationship Chatbot - Exit{% endblock %}
+
+{% block content %}
+<div class="exit-container">
+    <div class="exit-content">
+        <div class="exit-icon">👋</div>
+        <h1>Thank You for Using the Family Relationship Chatbot!</h1>
+        <p>Your session has been ended. We hope you found the chatbot helpful for understanding family relationships.</p>
+        
+        <div class="exit-options">
+            <a href="/" class="button primary">Return to Home</a>
+            <button onclick="window.close()" class="button secondary">Close Window</button>
+        </div>
+        
+        <div class="exit-info">
+            <p><small>This application was built using PROLOG inference engine with Python Flask backend.</small></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
