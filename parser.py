@@ -529,23 +529,7 @@ def add_fact_to_prolog(statement: str) -> str:
         ("X is a half-brother of Y", r"([A-Z][a-z]+) is a half-brother of ([A-Z][a-z]+)\.?", 
          lambda m: f"half_brother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
         
-        ("X is a mother-in-law of Y", r"([A-Z][a-z]+) is a mother-in-law of ([A-Z][a-z]+)\.?", 
-         lambda m: f"mother_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a father-in-law of Y", r"([A-Z][a-z]+) is a father-in-law of ([A-Z][a-z]+)\.?", 
-         lambda m: f"father_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a sister-in-law of Y", r"([A-Z][a-z]+) is a sister-in-law of ([A-Z][a-z]+)\.?", 
-         lambda m: f"sister_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a brother-in-law of Y", r"([A-Z][a-z]+) is a brother-in-law of ([A-Z][a-z]+)\.?", 
-         lambda m: f"brother_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a daughter-in-law of Y", r"([A-Z][a-z]+) is a daughter-in-law of ([A-Z][a-z]+)\.?", 
-         lambda m: f"daughter_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a son-in-law of Y", r"([A-Z][a-z]+) is a son-in-law of ([A-Z][a-z]+)\.?", 
-         lambda m: f"son_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
+
     ]
 
     for _, pattern, func in statement_patterns:
@@ -669,12 +653,7 @@ def query_prolog(question: str) -> str:
 
         ("Is X a half-sister of Y?", r"Is ([A-Z][a-z]+) a half-sister of ([A-Z][a-z]+)\?", lambda m: f"half_sister_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X a half-brother of Y?", r"Is ([A-Z][a-z]+) a half-brother of ([A-Z][a-z]+)\?", lambda m: f"half_brother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a mother-in-law of Y?", r"Is ([A-Z][a-z]+) a mother-in-law of ([A-Z][a-z]+)\?", lambda m: f"mother_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a father-in-law of Y?", r"Is ([A-Z][a-z]+) a father-in-law of ([A-Z][a-z]+)\?", lambda m: f"father_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a sister-in-law of Y?", r"Is ([A-Z][a-z]+) a sister-in-law of ([A-Z][a-z]+)\?", lambda m: f"sister_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a brother-in-law of Y?", r"Is ([A-Z][a-z]+) a brother-in-law of ([A-Z][a-z]+)\?", lambda m: f"brother_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a daughter-in-law of Y?", r"Is ([A-Z][a-z]+) a daughter-in-law of ([A-Z][a-z]+)\?", lambda m: f"daughter_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a son-in-law of Y?", r"Is ([A-Z][a-z]+) a son-in-law of ([A-Z][a-z]+)\?", lambda m: f"son_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
+
         
         # Who questions for new relationships
         ("Who are the nieces of X?", r"Who are the nieces of ([A-Z][a-z]+)\?", lambda m: f"niece_of(X, {to_prolog_name(m.group(1))})"),
