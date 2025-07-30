@@ -25,7 +25,47 @@ def validate_name(name: str) -> Tuple[bool, str]:
     if not (name[0].isupper() and name[1:].islower()):
         return False, f"Name '{name}' must have first letter capitalized and rest lowercase."
     
+    # Names are assumed to be valid according to specifications
+    # No need to restrict to a predefined set
+    
     return True, ""
+
+def update_relationships_after_fact_addition(fact: str, person_names: set):
+    """Apply intelligent relationship updates after adding a fact."""
+    try:
+        prolog = Prolog()
+        prolog.consult("relationships.pl")
+        
+        # If a parent relationship was added, check for sibling updates
+        for match in re.finditer(r'parent_of\(([^,]+),\s*([^)]+)\)', fact):
+            parent = match.group(1)
+            child = match.group(2)
+            
+            # Find siblings of the child
+            try:
+                sibling_results = list(prolog.query(f"sibling_of({child}, X)"))
+                for result in sibling_results:
+                    sibling = result["X"]
+                    # Check if the parent is already a parent of the sibling
+                    try:
+                        existing_parent = list(prolog.query(f"parent_of({parent}, {sibling})"))
+                        if not existing_parent:
+                            # Add the parent relationship for the sibling
+                            with open("relationships.pl", "r", encoding="utf-8") as f:
+                                content = f.read()
+                            
+                            # Add the new parent fact
+                            new_fact = f"parent_of({parent}, {sibling})."
+                            if new_fact not in content:
+                                with open("relationships.pl", "w", encoding="utf-8") as f:
+                                    f.write(new_fact + '\n' + content)
+                    except:
+                        pass
+            except:
+                pass
+                
+    except Exception as e:
+        print(f"Error updating relationships: {e}")
 
 def cleanup_impossible_relationships():
     """Clean up any impossible relationships from the knowledge base."""
@@ -167,95 +207,175 @@ def validate_relationship(statement: str, fact: str) -> Tuple[bool, str]:
     
     # Check for gender contradictions
     for name in person_names:
-        if "male(" + name + ")" in fact:
-            # Check if person is already marked as female
+        # Only block if the *opposite* gender is already set
+        if re.search(rf'\bmale\({name}\)\.', fact):
+            # Check if person is already marked as female (contradiction)
             try:
                 results = list(prolog.query(f"female({name})"))
-                if results:
+                if results and len(results) > 0:
                     return False, f"That's impossible! {name.capitalize()} cannot be both male and female."
-            except:
+            except Exception as e:
                 pass
-        elif "female(" + name + ")" in fact:
-            # Check if person is already marked as male
+        elif re.search(rf'\bfemale\({name}\)\.', fact):
+            # Check if person is already marked as male (contradiction)
             try:
                 results = list(prolog.query(f"male({name})"))
-                if results:
+                if results and len(results) > 0:
                     return False, f"That's impossible! {name.capitalize()} cannot be both male and female."
-            except:
+            except Exception as e:
                 pass
+        # Additional gender validation for parent relationships
+        if f"parent_of({name}," in fact:
+            # Check if this person is being made a father (male) but is already female (contradiction)
+            if "father" in statement.lower() or "son" in statement.lower():
+                try:
+                    results = list(prolog.query(f"female({name})"))
+                    if results and len(results) > 0:
+                        return False, f"That's impossible! {name.capitalize()} cannot be both male and female."
+                except:
+                    pass
+            # Check if this person is being made a mother (female) but is already male (contradiction)
+            elif "mother" in statement.lower() or "daughter" in statement.lower():
+                try:
+                    results = list(prolog.query(f"male({name})"))
+                    if results and len(results) > 0:
+                        return False, f"That's impossible! {name.capitalize()} cannot be both male and female."
+                except:
+                    pass
     
     # Check for impossible parent relationships and incestual relationships
     for name1 in person_names:
         for name2 in person_names:
             if name1 != name2:
                 if f"parent_of({name1}, {name2})" in fact:
+                    # Check if this parent relationship already exists
+                    try:
+                        existing_parent = list(prolog.query(f"parent_of({name1}, {name2})"))
+                        if existing_parent and len(existing_parent) > 0:
+                            # If the parent relationship already exists, this is just adding gender info
+                            # Check if the fact only contains gender facts or existing parent facts
+                            fact_lines = fact.split('\n')
+                            only_gender_or_existing = True
+                            for line in fact_lines:
+                                line = line.strip()
+                                if line and not line.startswith('male(') and not line.startswith('female('):
+                                    # Check if this is an existing parent fact
+                                    if line.startswith('parent_of('):
+                                        # Extract the parent relationship from the line
+                                        match = re.search(r'parent_of\(([^,]+),\s*([^)]+)\)', line)
+                                        if match:
+                                            parent = match.group(1)
+                                            child = match.group(2)
+                                            existing = list(prolog.query(f"parent_of({parent}, {child})"))
+                                            if not existing:
+                                                only_gender_or_existing = False
+                                                break
+                                    else:
+                                        only_gender_or_existing = False
+                                        break
+                            
+                            if only_gender_or_existing:
+                                # This is just adding gender info to existing relationships, allow it
+                                continue
+                    except Exception as e:
+                        # If query fails, continue with normal validation
+                        pass
+                    
                     # Check if they are already siblings (incestual)
                     try:
                         results = list(prolog.query(f"sibling_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} and {name2.capitalize()} are siblings, so {name1.capitalize()} cannot be {name2.capitalize()}'s parent."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     # Check if they are already cousins (incestual)
                     try:
                         results = list(prolog.query(f"cousin_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} and {name2.capitalize()} are cousins, so {name1.capitalize()} cannot be {name2.capitalize()}'s parent."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     # Check if they are aunt/nephew or uncle/niece (incestual)
                     try:
                         results = list(prolog.query(f"aunt_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} is {name2.capitalize()}'s aunt, so {name1.capitalize()} cannot be {name2.capitalize()}'s parent."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     try:
                         results = list(prolog.query(f"uncle_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} is {name2.capitalize()}'s uncle, so {name1.capitalize()} cannot be {name2.capitalize()}'s parent."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     try:
                         results = list(prolog.query(f"niece_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} is {name2.capitalize()}'s niece, so {name1.capitalize()} cannot be {name2.capitalize()}'s parent."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     try:
                         results = list(prolog.query(f"nephew_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} is {name2.capitalize()}'s nephew, so {name1.capitalize()} cannot be {name2.capitalize()}'s parent."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     # Check if name2 is already a parent of name1 (direct circular)
                     try:
                         results = list(prolog.query(f"parent_of({name2}, {name1})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! This would create a circular relationship. {name2.capitalize()} is already a parent of {name1.capitalize()}."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     # Check if name2 is already a grandparent of name1 (circular)
                     try:
                         results = list(prolog.query(f"grandparent_of({name2}, {name1})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! This would create a circular relationship. {name2.capitalize()} is already a grandparent of {name1.capitalize()}."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
+                        pass
+                    
+                    # Check for multi-generation cycles (ancestor-descendant cycles)
+                    try:
+                        # Check if name2 is an ancestor of name1 (would create a cycle)
+                        results = list(prolog.query(f"ancestor_of({name2}, {name1})"))
+                        if results and len(results) > 0:
+                            return False, f"That's impossible! This would create a circular relationship. {name2.capitalize()} is already an ancestor of {name1.capitalize()}."
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     # Check if they are already parent-child in reverse (impossible)
                     try:
                         results = list(prolog.query(f"child_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! {name1.capitalize()} is already a child of {name2.capitalize()}, so {name1.capitalize()} cannot be {name2.capitalize()}'s parent."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
+                        pass
+                    
+                    # Check if name2 is already a child of name1 (circular)
+                    try:
+                        results = list(prolog.query(f"child_of({name2}, {name1})"))
+                        if results and len(results) > 0:
+                            return False, f"That's impossible! This would create a circular relationship. {name2.capitalize()} is already a child of {name1.capitalize()}."
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
     
     # Check for sibling relationship validation (prevent incestual siblings)
@@ -266,48 +386,60 @@ def validate_relationship(statement: str, fact: str) -> Tuple[bool, str]:
                     # Check if they are already parent-child (impossible for siblings)
                     try:
                         results = list(prolog.query(f"parent_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} is already a parent of {name2.capitalize()}, so they cannot be siblings."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     try:
                         results = list(prolog.query(f"parent_of({name2}, {name1})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name2.capitalize()} is already a parent of {name1.capitalize()}, so they cannot be siblings."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     # Check if they are already grandparent-grandchild
                     try:
                         results = list(prolog.query(f"grandparent_of({name1}, {name2})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} is already a grandparent of {name2.capitalize()}, so they cannot be siblings."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     try:
                         results = list(prolog.query(f"grandparent_of({name2}, {name1})"))
-                        if results:
+                        if results and len(results) > 0:
                             return False, f"That's impossible! Incestual relationship detected! {name2.capitalize()} is already a grandparent of {name1.capitalize()}, so they cannot be siblings."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
     
     # Check for existing impossible relationships in the knowledge base
     try:
         # Check for self-relationships
         for name in person_names:
-            results = list(prolog.query(f"impossible_self_relationship({name})"))
-            if results:
-                return False, f"That's impossible! {name.capitalize()} has an impossible self-relationship in the knowledge base."
+            try:
+                results = list(prolog.query(f"impossible_self_relationship({name})"))
+                if results and len(results) > 0:
+                    return False, f"That's impossible! {name.capitalize()} has an impossible self-relationship in the knowledge base."
+            except Exception as e:
+                # If query fails, the relationship doesn't exist, which is fine
+                pass
         
         # Check for circular relationships
         for name1 in person_names:
             for name2 in person_names:
                 if name1 != name2:
-                    results = list(prolog.query(f"impossible_circular({name1}, {name2})"))
-                    if results:
-                        return False, f"That's impossible! There is already a circular relationship between {name1.capitalize()} and {name2.capitalize()} in the knowledge base."
+                    try:
+                        results = list(prolog.query(f"impossible_circular({name1}, {name2})"))
+                        if results and len(results) > 0:
+                            return False, f"That's impossible! There is already a circular relationship between {name1.capitalize()} and {name2.capitalize()} in the knowledge base."
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
+                        pass
         
         # Check for incestual relationships in existing knowledge base
         for name1 in person_names:
@@ -317,18 +449,20 @@ def validate_relationship(statement: str, fact: str) -> Tuple[bool, str]:
                     try:
                         sibling_results = list(prolog.query(f"sibling_of({name1}, {name2})"))
                         parent_results = list(prolog.query(f"parent_of({name1}, {name2})"))
-                        if sibling_results and parent_results:
+                        if sibling_results and len(sibling_results) > 0 and parent_results and len(parent_results) > 0:
                             return False, f"That's impossible! Incestual relationship detected in knowledge base! {name1.capitalize()} is both a sibling and parent of {name2.capitalize()}."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
                     
                     # Check for cousin-parent relationships
                     try:
                         cousin_results = list(prolog.query(f"cousin_of({name1}, {name2})"))
                         parent_results = list(prolog.query(f"parent_of({name1}, {name2})"))
-                        if cousin_results and parent_results:
+                        if cousin_results and len(cousin_results) > 0 and parent_results and len(parent_results) > 0:
                             return False, f"That's impossible! Incestual relationship detected in knowledge base! {name1.capitalize()} is both a cousin and parent of {name2.capitalize()}."
-                    except:
+                    except Exception as e:
+                        # If query fails, the relationship doesn't exist, which is fine
                         pass
     except:
         pass
@@ -342,7 +476,7 @@ def add_fact_to_prolog(statement: str) -> str:
     statement_patterns = [
         # Original patterns with periods
         ("X and Y are siblings", r"([A-Z][a-z]+) and ([A-Z][a-z]+) are siblings\.?", 
-         lambda m: f"parent_of(Z, {to_prolog_name(m.group(1))}).\nparent_of(Z, {to_prolog_name(m.group(2))})."),
+         lambda m: f"parent_of(parent_{to_prolog_name(m.group(1))}_{to_prolog_name(m.group(2))}, {to_prolog_name(m.group(1))}).\nparent_of(parent_{to_prolog_name(m.group(1))}_{to_prolog_name(m.group(2))}, {to_prolog_name(m.group(2))})."),
         
         ("X is a sister of Y", r"([A-Z][a-z]+) is a sister of ([A-Z][a-z]+)\.?", 
          lambda m: f"sibling_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nfemale({to_prolog_name(m.group(1))})."),
@@ -466,15 +600,45 @@ def add_fact_to_prolog(statement: str) -> str:
             # Read current contents
             with open("relationships.pl", "r", encoding="utf-8") as f:
                 old_contents = f.read()
-            # Write new fact at the top
-            with open("relationships.pl", "w", encoding="utf-8") as f:
-                f.write(f"{fact}\n" + old_contents)
-            # Reload Prolog knowledge base
-            prolog = Prolog()
-            prolog.consult("relationships.pl")
-            return "I learned something new."
+            
+            # Check if fact already exists to prevent duplicates
+            fact_lines = fact.split('\n')
+            new_facts = []
+            for fact_line in fact_lines:
+                if fact_line.strip():
+                    # Special handling for gender facts - always add if not already present
+                    if fact_line.strip().startswith('female(') or fact_line.strip().startswith('male('):
+                        if fact_line.strip() not in old_contents:
+                            new_facts.append(fact_line)
+                    # For non-gender facts, only add if not already present
+                    elif fact_line.strip() not in old_contents:
+                        new_facts.append(fact_line)
+            
+            if new_facts:
+                # Write new facts at the top
+                with open("relationships.pl", "w", encoding="utf-8") as f:
+                    f.write('\n'.join(new_facts) + '\n' + old_contents)
+                
+                # Reload Prolog knowledge base
+                prolog = Prolog()
+                prolog.consult("relationships.pl")
+                
+                # Apply intelligent relationship updates
+                update_relationships_after_fact_addition(fact, person_names)
+                
+                return "I learned something new."
+            else:
+                return "I already knew that."
     
-    # If no pattern matched, provide helpful suggestions
+    # If no pattern matched, check if it's a name validation issue
+    # Extract potential names from the statement
+    potential_names = re.findall(r'\b[A-Z][a-z]+\b', statement)
+    for name in potential_names:
+        is_valid, error_msg = validate_name(name)
+        if not is_valid:
+            return error_msg
+    
+    # If no name validation issues, provide helpful suggestions
     suggestions = [
         "Try statements like: 'Alice is the mother of Bob'",
         "Or: 'John and Mary are siblings'", 
@@ -513,6 +677,7 @@ def query_prolog(question: str) -> str:
         ("Who are the daughters of X?", r"Who are the daughters of ([A-Z][a-z]+)\?", lambda m: f"daughter_of(X, {to_prolog_name(m.group(1))})"),
         ("Who are the sons of X?", r"Who are the sons of ([A-Z][a-z]+)\?", lambda m: f"son_of(X, {to_prolog_name(m.group(1))})"),
         ("Who are the children of X?", r"Who are the children of ([A-Z][a-z]+)\?", lambda m: f"child_of(X, {to_prolog_name(m.group(1))})"),
+        ("Who is the uncle of X?", r"Who is the uncle of ([A-Z][a-z]+)\?", lambda m: f"uncle_of(X, {to_prolog_name(m.group(1))})"),
         ("Are X and Y relatives?", r"Are ([A-Z][a-z]+) and ([A-Z][a-z]+) relatives\?", lambda m: f"relative({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         
         # Additional relationship patterns
@@ -542,6 +707,9 @@ def query_prolog(question: str) -> str:
         ("Who are the grandchildren of X?", r"Who are the grandchildren of ([A-Z][a-z]+)\?", lambda m: f"grandchild_of(X, {to_prolog_name(m.group(1))})"),
         ("Who are the stepchildren of X?", r"Who are the stepchildren of ([A-Z][a-z]+)\?", lambda m: f"stepchild_of(X, {to_prolog_name(m.group(1))})"),
         ("Who are the half-siblings of X?", r"Who are the half-siblings of ([A-Z][a-z]+)\?", lambda m: f"half_sibling_of(X, {to_prolog_name(m.group(1))})"),
+        
+        # Cousin relationship queries
+        ("Are X and Y cousins?", r"Are ([A-Z][a-z]+) and ([A-Z][a-z]+) cousins\?", lambda m: f"cousin_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
     ]
 
     try:
@@ -569,7 +737,50 @@ def query_prolog(question: str) -> str:
                         else:
                             return "No."
                     else:
-                        return "No."
+                        # Extract the relationship type from the query for better error messages
+                        relationship_type = "relationship"
+                        if "sibling_of" in query:
+                            relationship_type = "siblings"
+                        elif "sister_of" in query:
+                            relationship_type = "sisters"
+                        elif "brother_of" in query:
+                            relationship_type = "brothers"
+                        elif "mother_of" in query:
+                            relationship_type = "mother"
+                        elif "father_of" in query:
+                            relationship_type = "father"
+                        elif "parent_of" in query:
+                            relationship_type = "parents"
+                        elif "daughter_of" in query:
+                            relationship_type = "daughters"
+                        elif "son_of" in query:
+                            relationship_type = "sons"
+                        elif "child_of" in query:
+                            relationship_type = "children"
+                        elif "uncle_of" in query:
+                            relationship_type = "uncle"
+                        elif "aunt_of" in query:
+                            relationship_type = "aunt"
+                        elif "niece_of" in query:
+                            relationship_type = "nieces"
+                        elif "nephew_of" in query:
+                            relationship_type = "nephews"
+                        elif "cousin_of" in query:
+                            relationship_type = "cousins"
+                        elif "grandchild_of" in query:
+                            relationship_type = "grandchildren"
+                        elif "stepchild_of" in query:
+                            relationship_type = "stepchildren"
+                        elif "half_sibling_of" in query:
+                            relationship_type = "half-siblings"
+                        
+                        # Extract the person's name from the query
+                        person_name = ""
+                        for i in range(1, len(match.groups()) + 1):
+                            person_name = match.group(i)
+                            break
+                        
+                        return f"That's impossible. {person_name} has no {relationship_type}."
                 else:
                     results = list(prolog.query(query))
                     if results:

@@ -535,16 +535,8 @@ function getFinalMessage() {
   return message;
 }
 
-// Scroll to bottom when page loads
-document.addEventListener('DOMContentLoaded', function() {
-  scrollToBottom();
-  
-  // Ensure template placeholder is empty on initial load
-  const templatePlaceholder = document.getElementById('templatePlaceholder');
-  if (templatePlaceholder) {
-    templatePlaceholder.innerHTML = '';
-  }
-  
+// Function to initialize all event listeners
+function initializeEventListeners() {
   const chatInput = document.getElementById('chatInput');
   const templateDropdown = document.getElementById('templateDropdown');
   const sendButton = document.getElementById('sendButton');
@@ -555,10 +547,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const templateCancelBtn = document.getElementById('templateCancelBtn');
   
   // Show template dropdown when input is clicked
-  chatInput.addEventListener('click', function() {
-    templateDropdown.classList.add('show');
-    chatInput.classList.add('template-active');
-  });
+  if (chatInput) {
+    chatInput.addEventListener('click', function() {
+      templateDropdown.classList.add('show');
+      chatInput.classList.add('template-active');
+    });
+    
+    // Enter key functionality
+    chatInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendButton.click();
+      }
+    });
+  }
   
   // Hide dropdown when clicking outside
   document.addEventListener('click', function(e) {
@@ -569,11 +570,13 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Collapse button functionality
-  collapseBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    templateDropdown.classList.remove('show');
-    chatInput.classList.remove('template-active');
-  });
+  if (collapseBtn) {
+    collapseBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      templateDropdown.classList.remove('show');
+      chatInput.classList.remove('template-active');
+    });
+  }
   
   // Cancel template selection button functionality
   if (templateCancelBtn) {
@@ -620,29 +623,24 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Send button functionality
-  sendButton.addEventListener('click', function() {
-    const message = getFinalMessage();
-    if (message) {
-      sendMessage(message);
-      
-      // Clear everything
-      chatInput.value = '';
-      chatInput.placeholder = 'Click here to select a template or type your message...';
-      chatInput.style.display = 'block';
-      chatInput.classList.remove('template-active');
-      const templatePlaceholder = document.getElementById('templatePlaceholder');
-      if (templatePlaceholder) {
-        templatePlaceholder.innerHTML = '';
+  if (sendButton) {
+    sendButton.addEventListener('click', function() {
+      const message = getFinalMessage();
+      if (message) {
+        sendMessage(message);
+        
+        // Clear everything
+        chatInput.value = '';
+        chatInput.placeholder = 'Click here to select a template or type your message...';
+        chatInput.style.display = 'block';
+        chatInput.classList.remove('template-active');
+        const templatePlaceholder = document.getElementById('templatePlaceholder');
+        if (templatePlaceholder) {
+          templatePlaceholder.innerHTML = '';
+        }
       }
-    }
-  });
-  
-  // Enter key functionality
-  chatInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      sendButton.click();
-    }
-  });
+    });
+  }
   
   // Handle Enter key in name inputs
   document.addEventListener('keypress', function(e) {
@@ -650,6 +648,20 @@ document.addEventListener('DOMContentLoaded', function() {
       sendButton.click();
     }
   });
+}
+
+// Scroll to bottom when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  scrollToBottom();
+  
+  // Ensure template placeholder is empty on initial load
+  const templatePlaceholder = document.getElementById('templatePlaceholder');
+  if (templatePlaceholder) {
+    templatePlaceholder.innerHTML = '';
+  }
+  
+  // Initialize event listeners
+  initializeEventListeners();
 });
 
 function sendMessage(message) {
@@ -668,7 +680,28 @@ function sendMessage(message) {
   .then(html => {
     // Update the page with new content
     document.documentElement.innerHTML = html;
-    scrollToBottom();
+    
+    // Reinitialize the input field state after page refresh
+    setTimeout(() => {
+      const chatInput = document.getElementById('chatInput');
+      const templatePlaceholder = document.getElementById('templatePlaceholder');
+      
+      if (chatInput) {
+        chatInput.value = '';
+        chatInput.placeholder = 'Click here to select a template or type your message...';
+        chatInput.style.display = 'block';
+        chatInput.classList.remove('template-active');
+      }
+      
+      if (templatePlaceholder) {
+        templatePlaceholder.innerHTML = '';
+      }
+      
+      // Reattach event listeners
+      initializeEventListeners();
+      
+      scrollToBottom();
+    }, 100);
   })
   .catch(error => {
     console.error('Error:', error);

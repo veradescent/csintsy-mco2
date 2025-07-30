@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -31,24 +32,31 @@ def load_knowledge(request: Request):
 @app.get("/menu-chat", response_class=HTMLResponse)
 def menu_chat(request: Request):
     """Menu-based chat interface"""
-    return templates.TemplateResponse("menu_chat.html", {"request": request})
+    return templates.TemplateResponse("menu_chat.html", {"request": request, "chat_history": []})
 
 @app.post("/menu-chat", response_class=HTMLResponse)
 async def process_menu_chat(request: Request, message: str = Form(...), chat_history: Optional[str] = Form(None)):
     """Process menu chat messages"""
     if not message.strip():
-        return templates.TemplateResponse("menu_chat.html", {"request": request, "chat_history": chat_history or ""})
+        return templates.TemplateResponse("menu_chat.html", {"request": request, "chat_history": []})
     
     # Parse and process the message
     response = parse_input(message.strip())
     
-    # Build chat history
-    if chat_history:
-        new_history = f"{chat_history}\n\nUser: {message}\nBot: {response}"
-    else:
-        new_history = f"User: {message}\nBot: {response}"
+    # Parse existing chat history
+    try:
+        if chat_history:
+            history_list = json.loads(chat_history)
+        else:
+            history_list = []
+    except (json.JSONDecodeError, TypeError):
+        history_list = []
     
-    return templates.TemplateResponse("menu_chat.html", {"request": request, "chat_history": new_history})
+    # Add new messages to history
+    history_list.append({"role": "user", "text": message})
+    history_list.append({"role": "bot", "text": response})
+    
+    return templates.TemplateResponse("menu_chat.html", {"request": request, "chat_history": history_list})
 
 @app.get("/exit", response_class=HTMLResponse)
 def exit_program(request: Request):
