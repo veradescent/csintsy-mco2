@@ -49,7 +49,9 @@ def add_fact_to_prolog(statement):
             with open("relationships.pl", "w", encoding="utf-8") as f:
                 f.write(f"{fact}\n" + old_contents)
             # Reload Prolog knowledge base
-            Prolog.consult("relationships.pl")
+            from pyswip import Prolog
+            prolog = Prolog()
+            prolog.consult("relationships.pl")
             return "OK! I learned something new."
     return f"[Unrecognized statement]: {statement}"
 
