@@ -135,6 +135,7 @@ This document provides a focused manual testing procedure to validate the family
 **Steps**:
 1. Add: "Alice and Bob are the parents of Charlie."
 2. Add: "Bob and Diana are the parents of Eve."
+3. Add: "Charlie is a son of Bob."
 3. Query: "Is Charlie a stepbrother of Eve?"
 **Expected Result**: Should return "Yes!" (inferring step-relationship)
 

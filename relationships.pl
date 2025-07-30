@@ -1,4 +1,5 @@
-
+parent_of(parent_alice_bob, alice).
+parent_of(parent_alice_bob, bob).
 
 % Family Relationship Rules with Validation
 
@@ -15,8 +16,13 @@ child_of(Y, X) :- parent_of(X, Y), X \= Y.
 son_of(Y, X) :- child_of(Y, X), male(Y).
 daughter_of(Y, X) :- child_of(Y, X), female(Y).
 
-% Sibling relationships
+% Sibling relationships (general - includes both full and half siblings)
 sibling_of(X, Y) :- parent_of(Z, X), parent_of(Z, Y), X \= Y, Z \= X, Z \= Y.
+
+% Full sibling relationships (share both parents)
+full_sibling_of(X, Y) :- 
+    parent_of(Z1, X), parent_of(Z1, Y), X \= Y,  % Share first parent Z1
+    parent_of(Z2, X), parent_of(Z2, Y), Z1 \= Z2. % Share second parent Z2 (different from Z1)
 
 % Gender-specific
 brother_of(X, Y) :- sibling_of(X, Y), male(X).
@@ -42,20 +48,15 @@ nephew_of(Y, X) :- male(Y), (uncle_of(X, Y); aunt_of(X, Y)), X \= Y.
 % Cousin relationships
 cousin_of(X, Y) :- parent_of(Z1, X), parent_of(Z2, Y), sibling_of(Z1, Z2), X \= Y.
 
-% Half-sibling relationships
-half_sibling_of(X, Y) :- parent_of(Z, X), parent_of(Z, Y), X \= Y, 
-                         parent_of(W1, X), parent_of(W2, Y), W1 \= W2, W1 \= Z, W2 \= Z.
+% Half-sibling relationships (share one parent but have different other parents)
+half_sibling_of(X, Y) :- 
+    parent_of(Z, X), parent_of(Z, Y), X \= Y,  % Share one parent Z
+    parent_of(W1, X), parent_of(W2, Y),        % Have other parents W1 and W2
+    W1 \= W2, W1 \= Z, W2 \= Z.                % Other parents are different and not the shared parent
 half_brother_of(X, Y) :- half_sibling_of(X, Y), male(X).
 half_sister_of(X, Y) :- half_sibling_of(X, Y), female(X).
 
-% Step relationships
-stepfather_of(X, Y) :- male(X), parent_of(X, Y), 
-                       parent_of(Z, Y), Z \= X, \+ sibling_of(X, Z).
-stepmother_of(X, Y) :- female(X), parent_of(X, Y), 
-                       parent_of(Z, Y), Z \= X, \+ sibling_of(X, Z).
-stepbrother_of(X, Y) :- male(X), stepfather_of(Z, X), stepfather_of(Z, Y), X \= Y.
-stepsister_of(X, Y) :- female(X), stepfather_of(Z, X), stepfather_of(Z, Y), X \= Y.
-stepchild_of(Y, X) :- (stepfather_of(X, Y); stepmother_of(X, Y)), X \= Y.
+
 
 % In-law relationships
 mother_in_law_of(X, Y) :- mother_of(X, Z), (parent_of(Z, Y); parent_of(Y, Z)), X \= Y.
@@ -70,7 +71,6 @@ relative(X, Y) :- parent_of(X, Y); parent_of(Y, X); child_of(X, Y); child_of(Y, 
                   sibling_of(X, Y); sibling_of(Y, X); grandparent_of(X, Y); grandparent_of(Y, X);
                   uncle_of(X, Y); uncle_of(Y, X); aunt_of(X, Y); aunt_of(Y, X);
                   cousin_of(X, Y); cousin_of(Y, X); half_sibling_of(X, Y); half_sibling_of(Y, X);
-                  stepfather_of(X, Y); stepmother_of(X, Y); stepbrother_of(X, Y); stepsister_of(X, Y);
                   mother_in_law_of(X, Y); father_in_law_of(X, Y); sister_in_law_of(X, Y); brother_in_law_of(X, Y);
                   daughter_in_law_of(X, Y); son_in_law_of(X, Y).
 

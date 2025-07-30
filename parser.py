@@ -32,40 +32,10 @@ def validate_name(name: str) -> Tuple[bool, str]:
 
 def update_relationships_after_fact_addition(fact: str, person_names: set):
     """Apply intelligent relationship updates after adding a fact."""
-    try:
-        prolog = Prolog()
-        prolog.consult("relationships.pl")
-        
-        # If a parent relationship was added, check for sibling updates
-        for match in re.finditer(r'parent_of\(([^,]+),\s*([^)]+)\)', fact):
-            parent = match.group(1)
-            child = match.group(2)
-            
-            # Find siblings of the child
-            try:
-                sibling_results = list(prolog.query(f"sibling_of({child}, X)"))
-                for result in sibling_results:
-                    sibling = result["X"]
-                    # Check if the parent is already a parent of the sibling
-                    try:
-                        existing_parent = list(prolog.query(f"parent_of({parent}, {sibling})"))
-                        if not existing_parent:
-                            # Add the parent relationship for the sibling
-                            with open("relationships.pl", "r", encoding="utf-8") as f:
-                                content = f.read()
-                            
-                            # Add the new parent fact
-                            new_fact = f"parent_of({parent}, {sibling})."
-                            if new_fact not in content:
-                                with open("relationships.pl", "w", encoding="utf-8") as f:
-                                    f.write(new_fact + '\n' + content)
-                    except:
-                        pass
-            except:
-                pass
-                
-    except Exception as e:
-        print(f"Error updating relationships: {e}")
+    # This function was causing incorrect parent relationships to be added
+    # For now, we'll disable automatic relationship updates to prevent bugs
+    # The Prolog rules should handle relationship inference automatically
+    pass
 
 def cleanup_impossible_relationships():
     """Clean up any impossible relationships from the knowledge base."""
@@ -377,6 +347,24 @@ def validate_relationship(statement: str, fact: str) -> Tuple[bool, str]:
                     except Exception as e:
                         # If query fails, the relationship doesn't exist, which is fine
                         pass
+                    
+                    # Check for incestual parent relationships
+                    # If name1 is already a parent of name2's parent, this could create incestual relationships
+                    try:
+                        # Check if name1 is already a parent of name2's parent
+                        results = list(prolog.query(f"parent_of({name1}, X), parent_of(X, {name2})"))
+                        if results and len(results) > 0:
+                            return False, f"That's impossible! Incestual relationship detected! {name1.capitalize()} is already a parent of {name2.capitalize()}'s parent, which would create an incestual situation."
+                    except Exception as e:
+                        pass
+                    
+                    # Check if name2 is already a parent of name1's parent
+                    try:
+                        results = list(prolog.query(f"parent_of({name2}, X), parent_of(X, {name1})"))
+                        if results and len(results) > 0:
+                            return False, f"That's impossible! Incestual relationship detected! {name2.capitalize()} is already a parent of {name1.capitalize()}'s parent, which would create an incestual situation."
+                    except Exception as e:
+                        pass
     
     # Check for sibling relationship validation (prevent incestual siblings)
     for name1 in person_names:
@@ -533,17 +521,7 @@ def add_fact_to_prolog(statement: str) -> str:
         ("X is a grandson of Y", r"([A-Z][a-z]+) is a grandson of ([A-Z][a-z]+)\.?", 
          lambda m: f"grandson_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
         
-        ("X is a stepmother of Y", r"([A-Z][a-z]+) is a stepmother of ([A-Z][a-z]+)\.?", 
-         lambda m: f"stepmother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a stepfather of Y", r"([A-Z][a-z]+) is a stepfather of ([A-Z][a-z]+)\.?", 
-         lambda m: f"stepfather_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a stepsister of Y", r"([A-Z][a-z]+) is a stepsister of ([A-Z][a-z]+)\.?", 
-         lambda m: f"stepsister_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        
-        ("X is a stepbrother of Y", r"([A-Z][a-z]+) is a stepbrother of ([A-Z][a-z]+)\.?", 
-         lambda m: f"stepbrother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
+
         
         ("X is a half-sister of Y", r"([A-Z][a-z]+) is a half-sister of ([A-Z][a-z]+)\.?", 
          lambda m: f"half_sister_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
@@ -655,6 +633,7 @@ def query_prolog(question: str) -> str:
     question_patterns = [
         # Original patterns
         ("Are X and Y siblings?", r"Are ([A-Z][a-z]+) and ([A-Z][a-z]+) siblings\?", lambda m: f"sibling_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
+        ("Are X and Y half-siblings?", r"Are ([A-Z][a-z]+) and ([A-Z][a-z]+) half-siblings\?", lambda m: f"half_sibling_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X a sister of Y?", r"Is ([A-Z][a-z]+) a sister of ([A-Z][a-z]+)\?", lambda m: f"sister_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X a brother of Y?", r"Is ([A-Z][a-z]+) a brother of ([A-Z][a-z]+)\?", lambda m: f"brother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X the mother of Y?", r"Is ([A-Z][a-z]+) the mother of ([A-Z][a-z]+)\?", lambda m: f"mother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
@@ -687,10 +666,7 @@ def query_prolog(question: str) -> str:
         ("Is X a grandchild of Y?", r"Is ([A-Z][a-z]+) a grandchild of ([A-Z][a-z]+)\?", lambda m: f"grandchild_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X a granddaughter of Y?", r"Is ([A-Z][a-z]+) a granddaughter of ([A-Z][a-z]+)\?", lambda m: f"granddaughter_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X a grandson of Y?", r"Is ([A-Z][a-z]+) a grandson of ([A-Z][a-z]+)\?", lambda m: f"grandson_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a stepmother of Y?", r"Is ([A-Z][a-z]+) a stepmother of ([A-Z][a-z]+)\?", lambda m: f"stepmother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a stepfather of Y?", r"Is ([A-Z][a-z]+) a stepfather of ([A-Z][a-z]+)\?", lambda m: f"stepfather_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a stepsister of Y?", r"Is ([A-Z][a-z]+) a stepsister of ([A-Z][a-z]+)\?", lambda m: f"stepsister_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
-        ("Is X a stepbrother of Y?", r"Is ([A-Z][a-z]+) a stepbrother of ([A-Z][a-z]+)\?", lambda m: f"stepbrother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
+
         ("Is X a half-sister of Y?", r"Is ([A-Z][a-z]+) a half-sister of ([A-Z][a-z]+)\?", lambda m: f"half_sister_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X a half-brother of Y?", r"Is ([A-Z][a-z]+) a half-brother of ([A-Z][a-z]+)\?", lambda m: f"half_brother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
         ("Is X a mother-in-law of Y?", r"Is ([A-Z][a-z]+) a mother-in-law of ([A-Z][a-z]+)\?", lambda m: f"mother_in_law_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})"),
@@ -705,7 +681,7 @@ def query_prolog(question: str) -> str:
         ("Who are the nephews of X?", r"Who are the nephews of ([A-Z][a-z]+)\?", lambda m: f"nephew_of(X, {to_prolog_name(m.group(1))})"),
         ("Who are the cousins of X?", r"Who are the cousins of ([A-Z][a-z]+)\?", lambda m: f"cousin_of(X, {to_prolog_name(m.group(1))})"),
         ("Who are the grandchildren of X?", r"Who are the grandchildren of ([A-Z][a-z]+)\?", lambda m: f"grandchild_of(X, {to_prolog_name(m.group(1))})"),
-        ("Who are the stepchildren of X?", r"Who are the stepchildren of ([A-Z][a-z]+)\?", lambda m: f"stepchild_of(X, {to_prolog_name(m.group(1))})"),
+
         ("Who are the half-siblings of X?", r"Who are the half-siblings of ([A-Z][a-z]+)\?", lambda m: f"half_sibling_of(X, {to_prolog_name(m.group(1))})"),
         
         # Cousin relationship queries

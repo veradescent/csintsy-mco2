@@ -78,10 +78,7 @@
           <div class="template-item" data-template="[Person1] is a grandchild of [Person2].">[Person1] is a grandchild of [Person2].</div>
           <div class="template-item" data-template="[Person1] is a granddaughter of [Person2].">[Person1] is a granddaughter of [Person2].</div>
           <div class="template-item" data-template="[Person1] is a grandson of [Person2].">[Person1] is a grandson of [Person2].</div>
-          <div class="template-item" data-template="[Person1] is a stepmother of [Person2].">[Person1] is a stepmother of [Person2].</div>
-          <div class="template-item" data-template="[Person1] is a stepfather of [Person2].">[Person1] is a stepfather of [Person2].</div>
-          <div class="template-item" data-template="[Person1] is a stepsister of [Person2].">[Person1] is a stepsister of [Person2].</div>
-          <div class="template-item" data-template="[Person1] is a stepbrother of [Person2].">[Person1] is a stepbrother of [Person2].</div>
+
           <div class="template-item" data-template="[Person1] is a half-sister of [Person2].">[Person1] is a half-sister of [Person2].</div>
           <div class="template-item" data-template="[Person1] is a half-brother of [Person2].">[Person1] is a half-brother of [Person2].</div>
           <div class="template-item" data-template="[Person1] is a mother-in-law of [Person2].">[Person1] is a mother-in-law of [Person2].</div>
@@ -95,6 +92,7 @@
         <!-- Question Templates -->
         <div class="template-list hidden" id="questionTemplates">
           <div class="template-item" data-template="Are [Person1] and [Person2] siblings?">Are [Person1] and [Person2] siblings?</div>
+          <div class="template-item" data-template="Are [Person1] and [Person2] half-siblings?">Are [Person1] and [Person2] half-siblings?</div>
           <div class="template-item" data-template="Is [Person1] the mother of [Person2]?">Is [Person1] the mother of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] the father of [Person2]?">Is [Person1] the father of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] a sister of [Person2]?">Is [Person1] a sister of [Person2]?</div>
@@ -117,10 +115,7 @@
           <div class="template-item" data-template="Is [Person1] a grandchild of [Person2]?">Is [Person1] a grandchild of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] a granddaughter of [Person2]?">Is [Person1] a granddaughter of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] a grandson of [Person2]?">Is [Person1] a grandson of [Person2]?</div>
-          <div class="template-item" data-template="Is [Person1] a stepmother of [Person2]?">Is [Person1] a stepmother of [Person2]?</div>
-          <div class="template-item" data-template="Is [Person1] a stepfather of [Person2]?">Is [Person1] a stepfather of [Person2]?</div>
-          <div class="template-item" data-template="Is [Person1] a stepsister of [Person2]?">Is [Person1] a stepsister of [Person2]?</div>
-          <div class="template-item" data-template="Is [Person1] a stepbrother of [Person2]?">Is [Person1] a stepbrother of [Person2]?</div>
+
           <div class="template-item" data-template="Is [Person1] a half-sister of [Person2]?">Is [Person1] a half-sister of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] a half-brother of [Person2]?">Is [Person1] a half-brother of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] a mother-in-law of [Person2]?">Is [Person1] a mother-in-law of [Person2]?</div>
@@ -133,7 +128,7 @@
           <div class="template-item" data-template="Who are the nephews of [Person1]?">Who are the nephews of [Person1]?</div>
           <div class="template-item" data-template="Who are the cousins of [Person1]?">Who are the cousins of [Person1]?</div>
           <div class="template-item" data-template="Who are the grandchildren of [Person1]?">Who are the grandchildren of [Person1]?</div>
-          <div class="template-item" data-template="Who are the stepchildren of [Person1]?">Who are the stepchildren of [Person1]?</div>
+
           <div class="template-item" data-template="Who are the half-siblings of [Person1]?">Who are the half-siblings of [Person1]?</div>
         </div>
       </div>
@@ -503,34 +498,23 @@ function getFinalMessage() {
   
   // Build the message by reconstructing it from the DOM structure
   let message = '';
-  const textNodes = [];
-  const inputNodes = [];
   
-  // Collect all text nodes and input nodes in order
-  function traverseNodes(node) {
+  // Traverse the DOM and build the message in order
+  function traverseAndBuild(node) {
     if (node.nodeType === Node.TEXT_NODE) {
-      textNodes.push(node.textContent);
+      message += node.textContent;
     } else if (node.classList && node.classList.contains('name-placeholder-input')) {
-      inputNodes.push(node);
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const name = toNameCase(node.value.trim());
+      message += name;
+    } else if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('template-cancel-btn')) {
+      // Skip the cancel button and traverse other elements
       for (let child of node.childNodes) {
-        traverseNodes(child);
+        traverseAndBuild(child);
       }
     }
   }
   
-  traverseNodes(placeholder);
-  
-  // Reconstruct the message
-  let inputIndex = 0;
-  for (let i = 0; i < textNodes.length; i++) {
-    message += textNodes[i];
-    if (inputIndex < inputNodes.length) {
-      const name = toNameCase(inputNodes[inputIndex].value.trim());
-      message += name;
-      inputIndex++;
-    }
-  }
+  traverseAndBuild(placeholder);
   
   return message;
 }
