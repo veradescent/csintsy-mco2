@@ -18,18 +18,18 @@ def add_fact_to_prolog(statement):
 
     # Using regex and parsing user input
     statement_patterns = [
-        ("X and Y are siblings", r"(\w+) and (\w+) are siblings", lambda m: f"sibling_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is a sister of Y", r"(\w+) is a sister of (\w+)", lambda m: f"sister_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is a brother of Y", r"(\w+) is a brother of (\w+)", lambda m: f"brother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is the mother of Y", r"(\w+) is the mother of (\w+)", lambda m: f"mother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is the father of Y", r"(\w+) is the father of (\w+)", lambda m: f"father_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is a son of Y", r"(\w+) is a son of (\w+)", lambda m: f"son_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is a daughter of Y", r"(\w+) is a daughter of (\w+)", lambda m: f"daughter_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is a child of Y", r"(\w+) is a child of (\w+)", lambda m: f"child_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is a grandmother of Y", r"(\w+) is a grandmother of (\w+)", lambda m: f"grandmother_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is a grandfather of Y", r"(\w+) is a grandfather of (\w+)", lambda m: f"grandfather_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is an uncle of Y", r"(\w+) is an uncle of (\w+)", lambda m: f"uncle_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
-        ("X is an aunt of Y", r"(\w+) is an aunt of (\w+)", lambda m: f"aunt_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
+        ("X and Y are siblings", r"(\w+) and (\w+) are siblings", lambda m: f"parent_of(Z, {to_prolog_name(m.group(1))}).\nparent_of(Z, {to_prolog_name(m.group(2))})."),
+        ("X is a sister of Y", r"(\w+) is a sister of (\w+)", lambda m: f"sibling_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nfemale({to_prolog_name(m.group(1))})."),
+        ("X is a brother of Y", r"(\w+) is a brother of (\w+)", lambda m: f"sibling_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nmale({to_prolog_name(m.group(1))})."),
+        ("X is the mother of Y", r"(\w+) is the mother of (\w+)", lambda m: f"parent_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nfemale({to_prolog_name(m.group(1))})."),
+        ("X is the father of Y", r"(\w+) is the father of (\w+)", lambda m: f"parent_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nmale({to_prolog_name(m.group(1))})."),
+        ("X is a son of Y", r"(\w+) is a son of (\w+)", lambda m: f"child_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nmale({to_prolog_name(m.group(1))})."),
+        ("X is a daughter of Y", r"(\w+) is a daughter of (\w+)", lambda m: f"child_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nfemale({to_prolog_name(m.group(1))})."),
+        ("X is a child of Y", r"(\w+) is a child of (\w+)", lambda m: f"parent_of({to_prolog_name(m.group(2))}, {to_prolog_name(m.group(1))})."),
+        ("X is a grandmother of Y", r"(\w+) is a grandmother of (\w+)", lambda m: f"grandparent_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nfemale({to_prolog_name(m.group(1))})."),
+        ("X is a grandfather of Y", r"(\w+) is a grandfather of (\w+)", lambda m: f"grandparent_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nmale({to_prolog_name(m.group(1))})."),
+        ("X is an uncle of Y", r"(\w+) is an uncle of (\w+)", lambda m: f"parent_of(Z, {to_prolog_name(m.group(2))}).\nsibling_of({to_prolog_name(m.group(1))}, Z).\nmale({to_prolog_name(m.group(1))})."),
+        ("X is an aunt of Y", r"(\w+) is an aunt of (\w+)", lambda m: f"aunt_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nfemale({to_prolog_name(m.group(1))})."),
         
         # Special case for parents: add parent_of, father_of, mother_of, male, female
         ("X and Y are the parents of Z", r"(\w+) and (\w+) are the parents of (\w+)",
