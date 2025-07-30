@@ -485,7 +485,7 @@ def add_fact_to_prolog(statement: str) -> str:
          lambda m: f"parent_of({to_prolog_name(m.group(2))}, {to_prolog_name(m.group(1))}).\nfemale({to_prolog_name(m.group(1))})."),
         
         ("X is a son of Y", r"([A-Z][a-z]+) is a son of ([A-Z][a-z]+)\.?", 
-         lambda m: f"parent_of({to_prolog_name(m.group(2))}, {to_prolog_name(m.group(1))}).\nmale({to_prolog_name(m.group(1))})."),
+         lambda m: f"parent_of({to_prolog_name(m.group(2))}, {to_prolog_name(m.group(1))}).\nmale({to_prolog_name(m.group(1))}).\nmale({to_prolog_name(m.group(2))})."),
         
         ("X is the father of Y", r"([A-Z][a-z]+) is the father of ([A-Z][a-z]+)\.?", 
          lambda m: f"parent_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))}).\nmale({to_prolog_name(m.group(1))})."),
