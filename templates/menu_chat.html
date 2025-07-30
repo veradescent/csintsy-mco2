@@ -1,0 +1,683 @@
+{% extends "base.html" %}
+{% block title %}Family Relationship Chatbot - Menu Chat{% endblock %}
+
+{% block content %}
+<div class="chat-outer">
+  <div class="chat-header">
+    <h1>Family Relationship Chatbot</h1>
+    <div class="chat-mode">
+      {% if mode == 'load' %}
+        <span class="mode-badge load">Knowledge Base Loaded</span>
+      {% else %}
+        <span class="mode-badge new">New Chat Session</span>
+      {% endif %}
+    </div>
+    <a href="/" class="back-button">← Back to Home</a>
+  </div>
+  <div class="chat-main">
+    <div class="chat-messages" id="chatMessages">
+      <div class="message bot-message">
+        <div class="message-content">
+          <strong>Chatbot:</strong> Hello! I'm ready to learn about family relationships and answer your questions.
+          Click the input field below to select a template, or type your message directly.
+        </div>
+      </div>
+      {% set chat_history = chat_history if chat_history is defined else [] %}
+      {% for msg in chat_history %}
+        {% if msg.role == 'user' %}
+        <div class="message user-message">
+          <div class="message-content">
+            <strong>You:</strong> {{ msg.text }}
+          </div>
+        </div>
+        {% elif msg.role == 'bot' %}
+        <div class="message bot-message">
+          <div class="message-content">
+            <strong>Chatbot:</strong> {{ msg.text }}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    
+    <!-- Hybrid input form -->
+    <div class="chat-input-form">
+      <input type="hidden" name="chat_history" id="chatHistoryInput" value='{{ chat_history | tojson | safe }}'>
+      
+      <!-- Template selection dropdown -->
+      <div class="template-dropdown" id="templateDropdown">
+        <div class="template-header">
+          <div class="template-type-selector">
+            <button class="type-btn active" data-type="statement">Statements</button>
+            <button class="type-btn" data-type="question">Questions</button>
+          </div>
+          <button class="collapse-btn" id="collapseBtn" title="Collapse template menu">×</button>
+        </div>
+        
+        <!-- Statement Templates -->
+        <div class="template-list" id="statementTemplates">
+          <div class="template-item" data-template="[Person1] and [Person2] are siblings.">[Person1] and [Person2] are siblings.</div>
+          <div class="template-item" data-template="[Person1] is the mother of [Person2].">[Person1] is the mother of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is the father of [Person2].">[Person1] is the father of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a sister of [Person2].">[Person1] is a sister of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a brother of [Person2].">[Person1] is a brother of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a child of [Person2].">[Person1] is a child of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a daughter of [Person2].">[Person1] is a daughter of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a son of [Person2].">[Person1] is a son of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a grandmother of [Person2].">[Person1] is a grandmother of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a grandfather of [Person2].">[Person1] is a grandfather of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is an uncle of [Person2].">[Person1] is an uncle of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is an aunt of [Person2].">[Person1] is an aunt of [Person2].</div>
+          <div class="template-item" data-template="[Person1] and [Person2] are the parents of [Person3].">[Person1] and [Person2] are the parents of [Person3].</div>
+          <div class="template-item" data-template="[Person1] and [Person2] are children of [Person3].">[Person1] and [Person2] are children of [Person3].</div>
+          <div class="template-item multi-person" data-template="[Person1], ... , and [PersonN] are siblings.">[Person1], ... , and [PersonN] are siblings.</div>
+          <div class="template-item multi-person" data-template="[Person1], ... , and [PersonN] are children of [PersonParent].">[Person1], ... , and [PersonN] are children of [PersonParent].</div>
+          <div class="template-item" data-template="[Person1] is a niece of [Person2].">[Person1] is a niece of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a nephew of [Person2].">[Person1] is a nephew of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a cousin of [Person2].">[Person1] is a cousin of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a grandchild of [Person2].">[Person1] is a grandchild of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a granddaughter of [Person2].">[Person1] is a granddaughter of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a grandson of [Person2].">[Person1] is a grandson of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a stepmother of [Person2].">[Person1] is a stepmother of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a stepfather of [Person2].">[Person1] is a stepfather of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a stepsister of [Person2].">[Person1] is a stepsister of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a stepbrother of [Person2].">[Person1] is a stepbrother of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a half-sister of [Person2].">[Person1] is a half-sister of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a half-brother of [Person2].">[Person1] is a half-brother of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a mother-in-law of [Person2].">[Person1] is a mother-in-law of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a father-in-law of [Person2].">[Person1] is a father-in-law of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a sister-in-law of [Person2].">[Person1] is a sister-in-law of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a brother-in-law of [Person2].">[Person1] is a brother-in-law of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a daughter-in-law of [Person2].">[Person1] is a daughter-in-law of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is a son-in-law of [Person2].">[Person1] is a son-in-law of [Person2].</div>
+        </div>
+        
+        <!-- Question Templates -->
+        <div class="template-list hidden" id="questionTemplates">
+          <div class="template-item" data-template="Are [Person1] and [Person2] siblings?">Are [Person1] and [Person2] siblings?</div>
+          <div class="template-item" data-template="Is [Person1] the mother of [Person2]?">Is [Person1] the mother of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] the father of [Person2]?">Is [Person1] the father of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a sister of [Person2]?">Is [Person1] a sister of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a brother of [Person2]?">Is [Person1] a brother of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a child of [Person2]?">Is [Person1] a child of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a daughter of [Person2]?">Is [Person1] a daughter of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a son of [Person2]?">Is [Person1] a son of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a grandmother of [Person2]?">Is [Person1] a grandmother of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a grandfather of [Person2]?">Is [Person1] a grandfather of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] an uncle of [Person2]?">Is [Person1] an uncle of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] an aunt of [Person2]?">Is [Person1] an aunt of [Person2]?</div>
+          <div class="template-item" data-template="Are [Person1] and [Person2] the parents of [Person3]?">Are [Person1] and [Person2] the parents of [Person3]?</div>
+          <div class="template-item" data-template="Who are the siblings of [Person1]?">Who are the siblings of [Person1]?</div>
+          <div class="template-item" data-template="Who is the mother of [Person1]?">Who is the mother of [Person1]?</div>
+          <div class="template-item" data-template="Who is the father of [Person1]?">Who is the father of [Person1]?</div>
+          <div class="template-item" data-template="Who are the children of [Person1]?">Who are the children of [Person1]?</div>
+          <div class="template-item" data-template="Is [Person1] a niece of [Person2]?">Is [Person1] a niece of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a nephew of [Person2]?">Is [Person1] a nephew of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a cousin of [Person2]?">Is [Person1] a cousin of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a grandchild of [Person2]?">Is [Person1] a grandchild of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a granddaughter of [Person2]?">Is [Person1] a granddaughter of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a grandson of [Person2]?">Is [Person1] a grandson of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a stepmother of [Person2]?">Is [Person1] a stepmother of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a stepfather of [Person2]?">Is [Person1] a stepfather of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a stepsister of [Person2]?">Is [Person1] a stepsister of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a stepbrother of [Person2]?">Is [Person1] a stepbrother of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a half-sister of [Person2]?">Is [Person1] a half-sister of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a half-brother of [Person2]?">Is [Person1] a half-brother of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a mother-in-law of [Person2]?">Is [Person1] a mother-in-law of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a father-in-law of [Person2]?">Is [Person1] a father-in-law of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a sister-in-law of [Person2]?">Is [Person1] a sister-in-law of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a brother-in-law of [Person2]?">Is [Person1] a brother-in-law of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a daughter-in-law of [Person2]?">Is [Person1] a daughter-in-law of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] a son-in-law of [Person2]?">Is [Person1] a son-in-law of [Person2]?</div>
+          <div class="template-item" data-template="Who are the nieces of [Person1]?">Who are the nieces of [Person1]?</div>
+          <div class="template-item" data-template="Who are the nephews of [Person1]?">Who are the nephews of [Person1]?</div>
+          <div class="template-item" data-template="Who are the cousins of [Person1]?">Who are the cousins of [Person1]?</div>
+          <div class="template-item" data-template="Who are the grandchildren of [Person1]?">Who are the grandchildren of [Person1]?</div>
+          <div class="template-item" data-template="Who are the stepchildren of [Person1]?">Who are the stepchildren of [Person1]?</div>
+          <div class="template-item" data-template="Who are the half-siblings of [Person1]?">Who are the half-siblings of [Person1]?</div>
+        </div>
+      </div>
+      
+      <!-- Input field and send button -->
+      <div class="input-group">
+        <div class="input-container">
+          <input type="text" name="message" placeholder="Click here to select a template or type your message..." required class="chat-input" id="chatInput" autocomplete="off">
+          <div class="template-placeholder" id="templatePlaceholder">
+          </div>
+        </div>
+        <button type="submit" class="send-button" id="sendButton">Send</button>
+      </div>
+      
+      <div class="chat-help">
+        <details>
+          <summary>Need Help? Click here for example prompts</summary>
+          <div class="help-content">
+            <h4>Example Statements:</h4>
+            <ul>
+              <li>"Alice and Bob are siblings."</li>
+              <li>"John is the father of Mary."</li>
+              <li>"Sarah is a sister of Tom."</li>
+            </ul>
+            <h4>Example Questions:</h4>
+            <ul>
+              <li>"Is Alice a grandmother of Charlie?"</li>
+              <li>"Who are the children of John?"</li>
+              <li>"Are Bob and Mary siblings?"</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Function to scroll to the bottom of chat messages
+function scrollToBottom() {
+  const chatMessages = document.getElementById('chatMessages');
+  if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+}
+
+// Function to convert text to proper name case (first letter uppercase, rest lowercase)
+function toNameCase(text) {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
+// Function to validate names and check for duplicates
+function validateNames(names) {
+  const seen = new Set();
+  const duplicates = [];
+  
+  names.forEach(name => {
+    const normalizedName = toNameCase(name.trim());
+    if (seen.has(normalizedName)) {
+      duplicates.push(normalizedName);
+    } else {
+      seen.add(normalizedName);
+    }
+  });
+  
+  return {
+    isValid: duplicates.length === 0,
+    duplicates: duplicates,
+    normalizedNames: Array.from(seen)
+  };
+}
+
+// Function to create editable name input
+function createNameInput(placeholder, index) {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'name-placeholder-input';
+  input.placeholder = placeholder;
+  input.dataset.index = index;
+  input.style.width = '80px';
+  input.style.border = '1px solid #4f46e5';
+  input.style.borderRadius = '4px';
+  input.style.padding = '2px 4px';
+  input.style.margin = '0 4px';
+  input.style.fontSize = 'inherit';
+  input.style.backgroundColor = '#f0f4ff';
+  
+  return input;
+}
+
+// Function to create add person button
+function createAddPersonButton() {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'add-person-btn';
+  button.innerHTML = '+';
+  button.title = 'Add another person';
+  button.style.cssText = `
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 4px;
+    transition: all 0.3s ease;
+  `;
+  
+  // Show tooltip immediately on hover
+  button.addEventListener('mouseenter', function() {
+    this.style.background = '#059669';
+    this.style.transform = 'scale(1.1)';
+    // Show tooltip immediately
+    this.setAttribute('data-tooltip', 'Add another person');
+  });
+  
+  button.addEventListener('mouseleave', function() {
+    this.style.background = '#10b981';
+    this.style.transform = 'scale(1)';
+    this.removeAttribute('data-tooltip');
+  });
+  
+  return button;
+}
+
+// Function to replace template placeholders with editable inputs
+function replaceTemplatePlaceholders(template) {
+  const placeholder = document.getElementById('templatePlaceholder');
+  placeholder.innerHTML = '';
+  
+  // Add cancel button
+  const cancelBtn = document.createElement('div');
+  cancelBtn.className = 'template-cancel-btn';
+  cancelBtn.id = 'templateCancelBtn';
+  cancelBtn.title = 'Cancel template selection';
+  cancelBtn.textContent = '×';
+  cancelBtn.addEventListener('click', cancelTemplateSelection);
+  placeholder.appendChild(cancelBtn);
+  
+  // Check if this is a multi-person template
+  const isMultiPersonSiblings = template.includes('[Person1], ... , and [PersonN] are siblings');
+  const isMultiPersonChildren = template.includes('[Person1], ... , and [PersonN] are children of [PersonParent]');
+  
+  if (isMultiPersonSiblings) {
+    createMultiPersonTemplate(placeholder, 'siblings');
+  } else if (isMultiPersonChildren) {
+    createMultiPersonTemplate(placeholder, 'children');
+  } else {
+    // Handle regular templates
+    const placeholderRegex = /\[(Person\d+)\]/g;
+    let match;
+    let lastIndex = 0;
+    let result = '';
+    
+    while ((match = placeholderRegex.exec(template)) !== null) {
+      // Add text before placeholder
+      result += template.slice(lastIndex, match.index);
+      
+      // Create input for placeholder
+      const input = createNameInput(match[1], match.index);
+      placeholder.appendChild(document.createTextNode(result));
+      placeholder.appendChild(input);
+      
+      // Reset for next iteration
+      result = '';
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    result += template.slice(lastIndex);
+    if (result) {
+      placeholder.appendChild(document.createTextNode(result));
+    }
+  }
+  
+  // Focus on first input
+  const firstInput = placeholder.querySelector('.name-placeholder-input');
+  if (firstInput) {
+    firstInput.focus();
+  }
+}
+
+// Function to create multi-person template with dynamic addition
+function createMultiPersonTemplate(placeholder, type) {
+  const personInputs = [];
+  let personCount = 2; // Start with 2 people
+  
+  function updateTemplate() {
+    placeholder.innerHTML = '';
+    
+    // Add cancel button
+    const cancelBtn = document.createElement('div');
+    cancelBtn.className = 'template-cancel-btn';
+    cancelBtn.id = 'templateCancelBtn';
+    cancelBtn.title = 'Cancel template selection';
+    cancelBtn.textContent = '×';
+    cancelBtn.addEventListener('click', cancelTemplateSelection);
+    placeholder.appendChild(cancelBtn);
+    
+    // Create the template text
+    if (type === 'siblings') {
+      if (personCount === 2) {
+        placeholder.appendChild(document.createTextNode(''));
+        const input1 = createNameInput('Person1', 0);
+        input1.dataset.personIndex = 0;
+        personInputs[0] = input1;
+        placeholder.appendChild(input1);
+        
+        placeholder.appendChild(document.createTextNode(' and '));
+        const input2 = createNameInput('Person2', 1);
+        input2.dataset.personIndex = 1;
+        personInputs[1] = input2;
+        placeholder.appendChild(input2);
+        
+        placeholder.appendChild(document.createTextNode(' are siblings.'));
+      } else {
+        placeholder.appendChild(document.createTextNode(''));
+        const input1 = createNameInput('Person1', 0);
+        input1.dataset.personIndex = 0;
+        personInputs[0] = input1;
+        placeholder.appendChild(input1);
+        
+        for (let i = 1; i < personCount - 1; i++) {
+          placeholder.appendChild(document.createTextNode(', '));
+          const input = createNameInput(`Person${i + 1}`, i);
+          input.dataset.personIndex = i;
+          personInputs[i] = input;
+          placeholder.appendChild(input);
+        }
+        
+        placeholder.appendChild(document.createTextNode(', and '));
+        const lastInput = createNameInput(`Person${personCount}`, personCount - 1);
+        lastInput.dataset.personIndex = personCount - 1;
+        personInputs[personCount - 1] = lastInput;
+        placeholder.appendChild(lastInput);
+        
+        placeholder.appendChild(document.createTextNode(' are siblings.'));
+      }
+    } else if (type === 'children') {
+      if (personCount === 2) {
+        placeholder.appendChild(document.createTextNode(''));
+        const input1 = createNameInput('Person1', 0);
+        input1.dataset.personIndex = 0;
+        personInputs[0] = input1;
+        placeholder.appendChild(input1);
+        
+        placeholder.appendChild(document.createTextNode(' and '));
+        const input2 = createNameInput('Person2', 1);
+        input2.dataset.personIndex = 1;
+        personInputs[1] = input2;
+        placeholder.appendChild(input2);
+        
+        placeholder.appendChild(document.createTextNode(' are children of '));
+        const parentInput = createNameInput('Parent', personCount);
+        parentInput.dataset.personIndex = personCount;
+        personInputs[personCount] = parentInput;
+        placeholder.appendChild(parentInput);
+        placeholder.appendChild(document.createTextNode('.'));
+      } else {
+        placeholder.appendChild(document.createTextNode(''));
+        const input1 = createNameInput('Person1', 0);
+        input1.dataset.personIndex = 0;
+        personInputs[0] = input1;
+        placeholder.appendChild(input1);
+        
+        for (let i = 1; i < personCount - 1; i++) {
+          placeholder.appendChild(document.createTextNode(', '));
+          const input = createNameInput(`Person${i + 1}`, i);
+          input.dataset.personIndex = i;
+          personInputs[i] = input;
+          placeholder.appendChild(input);
+        }
+        
+        placeholder.appendChild(document.createTextNode(', and '));
+        const lastInput = createNameInput(`Person${personCount}`, personCount - 1);
+        lastInput.dataset.personIndex = personCount - 1;
+        personInputs[personCount - 1] = lastInput;
+        placeholder.appendChild(lastInput);
+        
+        placeholder.appendChild(document.createTextNode(' are children of '));
+        const parentInput = createNameInput('Parent', personCount);
+        parentInput.dataset.personIndex = personCount;
+        personInputs[personCount] = parentInput;
+        placeholder.appendChild(parentInput);
+        placeholder.appendChild(document.createTextNode('.'));
+      }
+    }
+    
+    // Add the plus button after the last person input (before the parent for children)
+    const addButton = createAddPersonButton();
+    addButton.addEventListener('click', function() {
+      personCount++;
+      updateTemplate();
+      // Focus on the newly added input
+      const newInput = placeholder.querySelector(`[data-person-index="${personCount - 1}"]`);
+      if (newInput) {
+        newInput.focus();
+      }
+    });
+    
+    if (type === 'children') {
+      // Insert before the parent input
+      const parentInput = placeholder.querySelector(`[data-person-index="${personCount}"]`);
+      if (parentInput) {
+        parentInput.parentNode.insertBefore(addButton, parentInput);
+      }
+    } else {
+      // Insert at the end for siblings
+      placeholder.appendChild(addButton);
+    }
+  }
+  
+  // Initialize the template
+  updateTemplate();
+}
+
+  // Function to cancel template selection
+function cancelTemplateSelection() {
+  const chatInput = document.getElementById('chatInput');
+  const templatePlaceholder = document.getElementById('templatePlaceholder');
+  const templateDropdown = document.getElementById('templateDropdown');
+  
+  // Clear template placeholder completely
+  templatePlaceholder.innerHTML = '';
+  
+  // Show input field and focus it
+  chatInput.style.display = 'block';
+  chatInput.classList.remove('template-active');
+  chatInput.placeholder = 'Click here to select a template or type your message...';
+  chatInput.focus();
+  
+  // Hide template dropdown
+  templateDropdown.classList.remove('show');
+}
+
+// Function to get the final message from template and inputs
+function getFinalMessage() {
+  const placeholder = document.getElementById('templatePlaceholder');
+  const inputs = placeholder.querySelectorAll('.name-placeholder-input');
+  
+  if (inputs.length === 0) {
+    return document.getElementById('chatInput').value;
+  }
+  
+  // Get all names from inputs
+  const names = Array.from(inputs).map(input => input.value.trim());
+  
+  // Validate names
+  const validation = validateNames(names);
+  if (!validation.isValid) {
+    alert(`Error: Duplicate names detected: ${validation.duplicates.join(', ')}`);
+    return null;
+  }
+  
+  // Check if all inputs are filled
+  if (names.some(name => !name)) {
+    alert('Please fill in all name fields.');
+    return null;
+  }
+  
+  // Build the message by reconstructing it from the DOM structure
+  let message = '';
+  const textNodes = [];
+  const inputNodes = [];
+  
+  // Collect all text nodes and input nodes in order
+  function traverseNodes(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      textNodes.push(node.textContent);
+    } else if (node.classList && node.classList.contains('name-placeholder-input')) {
+      inputNodes.push(node);
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      for (let child of node.childNodes) {
+        traverseNodes(child);
+      }
+    }
+  }
+  
+  traverseNodes(placeholder);
+  
+  // Reconstruct the message
+  let inputIndex = 0;
+  for (let i = 0; i < textNodes.length; i++) {
+    message += textNodes[i];
+    if (inputIndex < inputNodes.length) {
+      const name = toNameCase(inputNodes[inputIndex].value.trim());
+      message += name;
+      inputIndex++;
+    }
+  }
+  
+  return message;
+}
+
+// Scroll to bottom when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  scrollToBottom();
+  
+  // Ensure template placeholder is empty on initial load
+  const templatePlaceholder = document.getElementById('templatePlaceholder');
+  if (templatePlaceholder) {
+    templatePlaceholder.innerHTML = '';
+  }
+  
+  const chatInput = document.getElementById('chatInput');
+  const templateDropdown = document.getElementById('templateDropdown');
+  const sendButton = document.getElementById('sendButton');
+  const typeBtns = document.querySelectorAll('.type-btn');
+  const statementTemplates = document.getElementById('statementTemplates');
+  const questionTemplates = document.getElementById('questionTemplates');
+  const collapseBtn = document.getElementById('collapseBtn');
+  const templateCancelBtn = document.getElementById('templateCancelBtn');
+  
+  // Show template dropdown when input is clicked
+  chatInput.addEventListener('click', function() {
+    templateDropdown.classList.add('show');
+    chatInput.classList.add('template-active');
+  });
+  
+  // Hide dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!templateDropdown.contains(e.target) && e.target !== chatInput) {
+      templateDropdown.classList.remove('show');
+      chatInput.classList.remove('template-active');
+    }
+  });
+  
+  // Collapse button functionality
+  collapseBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    templateDropdown.classList.remove('show');
+    chatInput.classList.remove('template-active');
+  });
+  
+  // Cancel template selection button functionality
+  if (templateCancelBtn) {
+    templateCancelBtn.addEventListener('click', cancelTemplateSelection);
+  }
+  
+  // Type selector functionality
+  typeBtns.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      
+      // Remove active class from all buttons
+      typeBtns.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      this.classList.add('active');
+      
+      // Show/hide appropriate templates
+      if (this.dataset.type === 'statement') {
+        statementTemplates.classList.remove('hidden');
+        questionTemplates.classList.add('hidden');
+      } else {
+        questionTemplates.classList.remove('hidden');
+        statementTemplates.classList.add('hidden');
+      }
+    });
+  });
+  
+  // Template selection functionality
+  const templateItems = document.querySelectorAll('.template-item');
+  templateItems.forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.stopPropagation();
+      
+      const template = this.dataset.template;
+      replaceTemplatePlaceholders(template);
+      
+      // Hide dropdown and remove focus ring
+      templateDropdown.classList.remove('show');
+      chatInput.classList.remove('template-active');
+      chatInput.style.display = 'none';
+      chatInput.value = '';
+      chatInput.placeholder = 'Template selected - fill in the highlighted fields above';
+    });
+  });
+  
+  // Send button functionality
+  sendButton.addEventListener('click', function() {
+    const message = getFinalMessage();
+    if (message) {
+      sendMessage(message);
+      
+      // Clear everything
+      chatInput.value = '';
+      chatInput.placeholder = 'Click here to select a template or type your message...';
+      chatInput.style.display = 'block';
+      chatInput.classList.remove('template-active');
+      const templatePlaceholder = document.getElementById('templatePlaceholder');
+      if (templatePlaceholder) {
+        templatePlaceholder.innerHTML = '';
+      }
+    }
+  });
+  
+  // Enter key functionality
+  chatInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      sendButton.click();
+    }
+  });
+  
+  // Handle Enter key in name inputs
+  document.addEventListener('keypress', function(e) {
+    if (e.target.classList.contains('name-placeholder-input') && e.key === 'Enter') {
+      sendButton.click();
+    }
+  });
+});
+
+function sendMessage(message) {
+  const chatHistory = document.querySelector('#chatHistoryInput') ? 
+    document.querySelector('#chatHistoryInput').value : '[]';
+  
+  const formData = new FormData();
+  formData.append('message', message);
+  formData.append('chat_history', chatHistory);
+  
+  fetch('/menu-chat', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.text())
+  .then(html => {
+    // Update the page with new content
+    document.documentElement.innerHTML = html;
+    scrollToBottom();
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error sending message. Please try again.');
+  });
+}
+
+// Also scroll to bottom when the window is resized
+window.addEventListener('resize', scrollToBottom);
+</script>
+
+{% endblock %} 
