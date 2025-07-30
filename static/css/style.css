@@ -99,6 +99,20 @@ body {
   color: #fff;
 }
 
+.option-card.disabled {
+  background: rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.option-card.disabled:hover {
+  background: rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+  transform: none;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.18);
+}
+
 .option-card.scroll-btn {
   background: rgba(255, 255, 255, 0.35);
   border: 1.5px solid rgba(16, 185, 129, 0.25);
@@ -279,6 +293,28 @@ body {
 .back-button:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
 
 .chat-main {
   flex: 1;

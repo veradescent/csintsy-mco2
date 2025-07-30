@@ -7,12 +7,14 @@
     <h1>Family Relationship Chatbot</h1>
     <div class="chat-mode">
       {% if mode == 'load' %}
-        <span class="mode-badge load">Knowledge Base Loaded</span>
+        <span class="mode-badge load">Previous Chat Loaded</span>
       {% else %}
         <span class="mode-badge new">New Chat Session</span>
       {% endif %}
     </div>
-    <a href="/" class="back-button">← Back to Home</a>
+    <div class="chat-actions">
+      <a href="/" class="back-button" id="backButton">← Back to Home</a>
+    </div>
   </div>
   <div class="chat-main">
     <div class="chat-messages" id="chatMessages">
@@ -43,6 +45,11 @@
     <!-- Hybrid input form -->
     <div class="chat-input-form">
       <input type="hidden" name="chat_history" id="chatHistoryInput" value='{{ chat_history | tojson | safe }}'>
+      <input type="hidden" name="session_folder" id="sessionFolderInput" value='{{ current_session_folder or "" }}'>
+      <!-- Debug info -->
+      <script>
+        console.log('Current session folder from template:', '{{ current_session_folder or "None" }}');
+      </script>
       
       <!-- Template selection dropdown -->
       <div class="template-dropdown" id="templateDropdown">
@@ -685,6 +692,204 @@ function sendMessage(message) {
 
 // Also scroll to bottom when the window is resized
 window.addEventListener('resize', scrollToBottom);
+
+// Exit warning functionality
+let chatModified = false;
+
+// Check if there are existing messages in the chat history
+document.addEventListener('DOMContentLoaded', function() {
+  const chatHistoryInput = document.getElementById('chatHistoryInput');
+  if (chatHistoryInput && chatHistoryInput.value) {
+    try {
+      const history = JSON.parse(chatHistoryInput.value);
+      if (history.length > 0) {
+        chatModified = true;
+        console.log('Chat history found, marking as modified');
+      }
+    } catch (e) {
+      console.error('Error parsing chat history:', e);
+    }
+  }
+});
+
+// Track if chat has been modified
+function markChatModified() {
+  chatModified = true;
+  console.log('Chat marked as modified:', chatModified);
+}
+
+// Save chat functionality
+function saveChat() {
+  return fetch('/save-chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      chatModified = false;
+      return true;
+    } else {
+      return false;
+    }
+  })
+  .catch(error => {
+    console.error('Error saving chat:', error);
+    return false;
+  });
+}
+
+// Exit warning functionality
+function showExitWarning() {
+  console.log('showExitWarning called, chatModified:', chatModified);
+  if (!chatModified) {
+    console.log('No modifications, allowing exit');
+    return true; // Allow exit without warning
+  }
+  
+  const result = confirm('You have unsaved changes. Closing will discard the entire chat.\n\nDo you want to save this chat before leaving?\n\nClick "OK" to save and continue, or "Cancel" to leave without saving.');
+  
+  if (result) {
+    // User chose to save
+    saveChat().then(success => {
+      if (success) {
+        window.location.href = '/';
+      }
+    });
+    return false; // Prevent immediate navigation
+  } else {
+    // User chose not to save - delete the chat session
+    console.log('User chose not to save, deleting chat session...');
+    
+    const sessionFolder = document.getElementById('sessionFolderInput') ? 
+      document.getElementById('sessionFolderInput').value : '';
+    
+    console.log('Session folder to delete:', sessionFolder);
+    
+    fetch('/delete-chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        session_folder: sessionFolder
+      })
+    })
+    .then(response => {
+      console.log('Delete response status:', response.status);
+      return response.json();
+    })
+    .then(data => {
+      console.log('Delete response data:', data);
+      if (data.success) {
+        console.log('Chat session deleted successfully, redirecting...');
+        window.location.href = '/';
+      } else {
+        console.error('Failed to delete chat session');
+        window.location.href = '/';
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting chat:', error);
+      window.location.href = '/';
+    });
+    return false; // Don't allow immediate navigation, let the fetch complete
+  }
+}
+
+// Initialize exit warnings
+function initializeExitWarnings() {
+  // Add exit warning to back button
+  const backButton = document.getElementById('backButton');
+  if (backButton) {
+    backButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Back button clicked, chatModified:', chatModified);
+      const shouldAllowExit = showExitWarning();
+      if (shouldAllowExit) {
+        window.location.href = '/';
+      }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initializeExitWarnings();
+  
+
+  
+
+  
+  // Mark chat as modified when new messages are sent
+  const originalSendMessage = window.sendMessage;
+  window.sendMessage = function(message) {
+    markChatModified();
+    if (originalSendMessage) {
+      return originalSendMessage(message);
+    }
+  };
+  
+  // Override the sendMessage function to track modifications
+  window.sendMessage = function(message) {
+    markChatModified();
+    const chatHistory = document.querySelector('#chatHistoryInput') ? 
+      document.querySelector('#chatHistoryInput').value : '[]';
+    
+    const formData = new FormData();
+    formData.append('message', message);
+    formData.append('chat_history', chatHistory);
+    
+    fetch('/menu-chat', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+      // Update the page with new content
+      document.documentElement.innerHTML = html;
+      
+      // Reinitialize the input field state after page refresh
+      setTimeout(() => {
+        const chatInput = document.getElementById('chatInput');
+        const templatePlaceholder = document.getElementById('templatePlaceholder');
+        
+        if (chatInput) {
+          chatInput.value = '';
+          chatInput.placeholder = 'Click here to select a template or type your message...';
+          chatInput.style.display = 'block';
+          chatInput.classList.remove('template-active');
+        }
+        
+        if (templatePlaceholder) {
+          templatePlaceholder.innerHTML = '';
+        }
+        
+        // Reattach event listeners
+        initializeEventListeners();
+        initializeExitWarnings();
+        
+        scrollToBottom();
+      }, 100);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error sending message. Please try again.');
+    });
+  };
+  
+  // Mark chat as modified when template is used
+  const sendButton = document.getElementById('sendButton');
+  if (sendButton) {
+    const originalClick = sendButton.onclick;
+    sendButton.addEventListener('click', function() {
+      markChatModified();
+    });
+  }
+});
+
+
 </script>
 
 {% endblock %} 

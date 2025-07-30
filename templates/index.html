@@ -9,13 +9,21 @@
             <img src="/static/css/images/Logo.png" alt="Family Chatbot Logo" class="app-logo">
         </div>
         <div class="options-grid small-buttons">
-            <a href="/load-knowledge" class="option-card primary">
+            {% if has_saved_chat %}
+            <a href="/load-chat" class="option-card primary">
                 <div class="option-icon">📚</div>
-                <h3>Resume Last Chat</h3>
-                <p>Continue your previous conversation with the menu-based interface.</p>
+                <h3>Load Last Chat</h3>
+                <p>Continue your previous saved conversation with the menu-based interface.</p>
             </a>
+            {% else %}
+            <div class="option-card disabled">
+                <div class="option-icon">📚</div>
+                <h3>Load Last Chat</h3>
+                <p>No saved chat found. Start a new chat first.</p>
+            </div>
+            {% endif %}
             
-            <a href="/menu-chat" class="option-card primary">
+            <a href="/new-chat" class="option-card primary">
                 <div class="option-icon">💬</div>
                 <h3>Start New Chat</h3>
                 <p>Begin a new family relationship chat with template-based input options.</p>

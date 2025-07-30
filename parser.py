@@ -41,7 +41,7 @@ def cleanup_impossible_relationships():
     """Clean up any impossible relationships from the knowledge base."""
     try:
         prolog = Prolog()
-        prolog.consult("relationships.pl")
+        prolog.consult(current_kb_file)
         
         # Check for self-relationships and remove them
         results = list(prolog.query("parent_of(X, X)"))
@@ -66,7 +66,7 @@ def check_complex_incestual_scenarios(fact: str, person_names: set) -> Tuple[boo
     """Check for complex incestual scenarios involving multiple people."""
     try:
         prolog = Prolog()
-        prolog.consult("relationships.pl")
+        prolog.consult(current_kb_file)
         
         # Check if adding this fact would create a scenario where siblings become parents of the same child
         if "parent_of(" in fact:
@@ -137,7 +137,7 @@ def validate_relationship(statement: str, fact: str) -> Tuple[bool, str]:
     # Load current knowledge base
     try:
         prolog = Prolog()
-        prolog.consult("relationships.pl")
+        prolog.consult(current_kb_file)
     except:
         # If file doesn't exist or is empty, allow the first fact
         return True, ""
@@ -457,6 +457,9 @@ def validate_relationship(statement: str, fact: str) -> Tuple[bool, str]:
     
     return True, ""
 
+# Global variable to track current knowledge base file
+current_kb_file = "relationships.pl"
+
 def add_fact_to_prolog(statement: str) -> str:
     """Translate a user statement into a Prolog fact and assert it."""
     
@@ -560,7 +563,7 @@ def add_fact_to_prolog(statement: str) -> str:
                 return f"That's impossible! {complex_error}"
             
             # Read current contents
-            with open("relationships.pl", "r", encoding="utf-8") as f:
+            with open(current_kb_file, "r", encoding="utf-8") as f:
                 old_contents = f.read()
             
             # Check if fact already exists to prevent duplicates
@@ -578,12 +581,12 @@ def add_fact_to_prolog(statement: str) -> str:
             
             if new_facts:
                 # Write new facts at the top
-                with open("relationships.pl", "w", encoding="utf-8") as f:
+                with open(current_kb_file, "w", encoding="utf-8") as f:
                     f.write('\n'.join(new_facts) + '\n' + old_contents)
                 
                 # Reload Prolog knowledge base
                 prolog = Prolog()
-                prolog.consult("relationships.pl")
+                prolog.consult(current_kb_file)
                 
                 # Apply intelligent relationship updates
                 update_relationships_after_fact_addition(fact, person_names)
@@ -681,7 +684,7 @@ def query_prolog(question: str) -> str:
                 query = func(match)
                 
                 prolog = Prolog()
-                prolog.consult("relationships.pl")
+                prolog.consult(current_kb_file)
 
                 if "X" in query: # For questions that ask for specific names
                     results = list(prolog.query(query))
