@@ -1,3 +1,4 @@
+
 % Revised Rules
 
 % Father-mother-child relationship

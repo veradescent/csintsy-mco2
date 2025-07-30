@@ -30,6 +30,7 @@ def add_fact_to_prolog(statement):
         ("X is a grandfather of Y", r"(\w+) is a grandfather of (\w+)", lambda m: f"grandfather_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
         ("X is an uncle of Y", r"(\w+) is an uncle of (\w+)", lambda m: f"uncle_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
         ("X is an aunt of Y", r"(\w+) is an aunt of (\w+)", lambda m: f"aunt_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(2))})."),
+        
         # Special case for parents: add parent_of, father_of, mother_of, male, female
         ("X and Y are the parents of Z", r"(\w+) and (\w+) are the parents of (\w+)",
             lambda m: f"parent_of({to_prolog_name(m.group(1))}, {to_prolog_name(m.group(3))}).\nparent_of({to_prolog_name(m.group(2))}, {to_prolog_name(m.group(3))}).\n"
@@ -153,12 +154,36 @@ def exit_program(request: Request):
     """Exit the program"""
     return templates.TemplateResponse("exit.html", {"request": request})
 
+# Save chat history
+from typing import Optional
+import json
+
 @app.post("/chat", response_class=HTMLResponse)
-def process_chat(request: Request, message: str = Form(...)):
-    """Process chat messages and translate to Prolog statement/query."""
+async def process_chat(request: Request, message: str = Form(...), chat_history: Optional[str] = Form(None)):
+    """Process chat messages and translate to Prolog statement/query, maintaining chat history."""
+    
+    if chat_history:
+        try:
+            chat_history_list = json.loads(chat_history)
+        except Exception:
+            chat_history_list = []
+    else:
+        chat_history_list = []
+
     user_input = message
-    response = parse_input(user_input) # Parse the input and get Prolog response
-    return templates.TemplateResponse("chat.html", {"request": request, "user_input": user_input, "response": response})
+    response = parse_input(user_input)
+
+    chat_history_list.append({"role": "user", "text": user_input})
+    chat_history_list.append({"role": "bot", "text": response})
+
+    return templates.TemplateResponse(
+        "chat.html",
+        {
+            "request": request,
+            "chat_history": chat_history_list,
+            "mode": "new"  
+        }
+    )
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=3000, reload=True)

@@ -24,22 +24,26 @@
                     You can tell me facts like "Alice is the mother of Bob" or ask questions like "Is Alice a grandmother of Charlie?"
                 </div>
             </div>
-            
-            {% if user_input and response %}
-            <div class="message user-message">
-                <div class="message-content">
-                    <strong>You:</strong> {{ user_input }}
+            {% set chat_history = chat_history if chat_history is defined else [] %}
+            {% for msg in chat_history %}
+                {% if msg.role == 'user' %}
+                <div class="message user-message">
+                    <div class="message-content">
+                        <strong>You:</strong> {{ msg.text }}
+                    </div>
                 </div>
-            </div>
-            <div class="message bot-message">
-                <div class="message-content">
-                    <strong>Chatbot:</strong> {{ response }}
+                {% elif msg.role == 'bot' %}
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <strong>Chatbot:</strong> {{ msg.text }}
+                    </div>
                 </div>
-            </div>
-            {% endif %}
+                {% endif %}
+            {% endfor %}
         </div>
 
         <form class="chat-input-form" method="POST" action="/chat">
+            <input type="hidden" name="chat_history" id="chatHistoryInput" value='{{ chat_history | tojson | safe }}'>
             <div class="input-group">
                 <input type="text" name="message" placeholder="Type your message here..." required class="chat-input">
                 <button type="submit" class="send-button">Send</button>
