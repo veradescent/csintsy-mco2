@@ -33,6 +33,10 @@ grandson_of(Y, X) :- grandchild_of(Y, X), male(Y).
 uncle_of(X, Y) :- brother_of(X, Z), parent_of(Z, Y), X \= Y.
 aunt_of(X, Y) :- sister_of(X, Z), parent_of(Z, Y), X \= Y.
 
+
+
+
+
 % Niece/Nephew relationships
 niece_of(Y, X) :- female(Y), (uncle_of(X, Y); aunt_of(X, Y)), X \= Y.
 nephew_of(Y, X) :- male(Y), (uncle_of(X, Y); aunt_of(X, Y)), X \= Y.

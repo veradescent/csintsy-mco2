@@ -1,5 +1,5 @@
 fastapi
 uvicorn
 jinja2
-pyswip==0.2.10
+pyswip
 python-multipart

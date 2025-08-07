@@ -10,8 +10,43 @@ from typing import Optional
 import re
 from pyswip import Prolog
 
-# Import parser functions from the new parser module
-from parser import parse_input, cleanup_impossible_relationships
+# Import parser functions from the new modular parser
+from parser import parse_input, query_prolog, add_fact_to_prolog
+
+def cleanup_unsaved_chats():
+    """Clean up any chat folders that don't have save flags at startup."""
+    print("Starting cleanup of unsaved chats...")
+    
+    if not os.path.exists("chats"):
+        print("chats directory does not exist, nothing to clean up")
+        return
+    
+    # Get all chat folders
+    try:
+        chat_folders = [f for f in os.listdir("chats") if f.startswith("chat_")]
+        print(f"Found {len(chat_folders)} chat folders")
+        
+        deleted_count = 0
+        for folder in chat_folders:
+            chat_folder = os.path.join("chats", folder)
+            saved_flag_file = os.path.join(chat_folder, "saved.flag")
+            
+            # Check if this chat has a save flag
+            if not os.path.exists(saved_flag_file):
+                print(f"Deleting unsaved chat folder: {folder}")
+                try:
+                    shutil.rmtree(chat_folder)
+                    deleted_count += 1
+                    print(f"Successfully deleted {folder}")
+                except Exception as e:
+                    print(f"Error deleting {folder}: {e}")
+            else:
+                print(f"Keeping saved chat folder: {folder}")
+        
+        print(f"Cleanup complete. Deleted {deleted_count} unsaved chat folders.")
+        
+    except Exception as e:
+        print(f"Error during cleanup: {e}")
 
 app = FastAPI()
 
@@ -42,34 +77,8 @@ def create_chat_session():
     else:
         # Create a basic relationships.pl file if it doesn't exist
         with open(chat_kb_file, "w") as f:
-            f.write("% Family Relationship Rules\n\n")
-            f.write("% Basic parent-child relationship\n")
-            f.write("father_of(X, Y) :- parent_of(X, Y), male(X), X \\= Y.\n")
-            f.write("mother_of(X, Y) :- parent_of(X, Y), female(X), X \\= Y.\n")
-            f.write("child_of(Y, X) :- parent_of(X, Y), X \\= Y.\n")
-            f.write("son_of(Y, X) :- child_of(Y, X), male(Y).\n")
-            f.write("daughter_of(Y, X) :- child_of(Y, X), female(Y).\n")
-            f.write("sibling_of(X, Y) :- parent_of(Z, X), parent_of(Z, Y), X \\= Y, Z \\= X, Z \\= Y.\n")
-            f.write("brother_of(X, Y) :- sibling_of(X, Y), male(X).\n")
-            f.write("sister_of(X, Y) :- sibling_of(X, Y), female(X).\n")
-            f.write("grandparent_of(X, Y) :- parent_of(X, Z), parent_of(Z, Y), X \\= Y.\n")
-            f.write("grandmother_of(X, Y) :- grandparent_of(X, Y), female(X).\n")
-            f.write("grandfather_of(X, Y) :- grandparent_of(X, Y), male(X).\n")
-            f.write("grandchild_of(Y, X) :- grandparent_of(X, Y), X \\= Y.\n")
-            f.write("granddaughter_of(Y, X) :- grandchild_of(Y, X), female(Y).\n")
-            f.write("grandson_of(Y, X) :- grandchild_of(Y, X), male(Y).\n")
-            f.write("uncle_of(X, Y) :- brother_of(X, Z), parent_of(Z, Y), X \\= Y.\n")
-            f.write("aunt_of(X, Y) :- sister_of(X, Z), parent_of(Z, Y), X \\= Y.\n")
-            f.write("niece_of(Y, X) :- female(Y), (uncle_of(X, Y); aunt_of(X, Y)), X \\= Y.\n")
-            f.write("nephew_of(Y, X) :- male(Y), (uncle_of(X, Y); aunt_of(X, Y)), X \\= Y.\n")
-            f.write("cousin_of(X, Y) :- parent_of(Z1, X), parent_of(Z2, Y), sibling_of(Z1, Z2), X \\= Y.\n")
-            f.write("half_sibling_of(X, Y) :- parent_of(Z, X), parent_of(Z, Y), X \\= Y, parent_of(W1, X), parent_of(W2, Y), W1 \\= W2, W1 \\= Z, W2 \\= Z.\n")
-            f.write("half_brother_of(X, Y) :- half_sibling_of(X, Y), male(X).\n")
-            f.write("half_sister_of(X, Y) :- half_sibling_of(X, Y), female(X).\n")
-            f.write("relative(X, Y) :- parent_of(X, Y); parent_of(Y, X); child_of(X, Y); child_of(Y, X); sibling_of(X, Y); sibling_of(Y, X); grandparent_of(X, Y); grandparent_of(Y, X); uncle_of(X, Y); uncle_of(Y, X); aunt_of(X, Y); aunt_of(Y, X); cousin_of(X, Y); cousin_of(Y, X); half_sibling_of(X, Y); half_sibling_of(Y, X).\n")
-            f.write("ancestor_of(X, Y) :- parent_of(X, Y).\n")
-            f.write("ancestor_of(X, Y) :- parent_of(X, Z), parent_of(Z, Y), X \\= Y.\n")
-            f.write("ancestor_of(X, Y) :- parent_of(X, Z1), parent_of(Z1, Z2), parent_of(Z2, Y), X \\= Y, Z1 \\= Y.\n")
+            from rule_writer import write_correct_rules
+            write_correct_rules(f)
     
     # Create empty chat history file
     chat_history_file = os.path.join(chat_folder, "chat_history.json")
@@ -347,17 +356,25 @@ async def process_menu_chat(request: Request, message: str = Form(...), chat_his
     if not current_chat_session:
         create_chat_session()
     
-    # Temporarily set the knowledge base file for the parser
+    # Set the knowledge base file for the parser modules
     import parser
-    original_kb_file = getattr(parser, 'current_kb_file', 'relationships.pl')
-    parser.current_kb_file = get_current_kb_file()
+    import fact_manager
+    import validation
+    import query_handler
+    
+    # Update the current_kb_file in all modules
+    current_kb_file = get_current_kb_file()
+    parser.current_kb_file = current_kb_file
+    fact_manager.current_kb_file = current_kb_file
+    validation.current_kb_file = current_kb_file
+    query_handler.current_kb_file = current_kb_file
     
     try:
         # Parse and process the message
         response = parse_input(message.strip())
-    finally:
-        # Restore original knowledge base file
-        parser.current_kb_file = original_kb_file
+    except Exception as e:
+        print(f"Error processing message: {e}")
+        response = f"Error processing message: {str(e)}"
     
     # Parse existing chat history
     try:
@@ -424,5 +441,8 @@ def exit_program(request: Request):
     return templates.TemplateResponse("exit.html", {"request": request})
 
 if __name__ == "__main__":
+    # Clean up unsaved chats at startup
+    cleanup_unsaved_chats()
+    
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

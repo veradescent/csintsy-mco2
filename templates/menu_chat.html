@@ -86,15 +86,14 @@
           <div class="template-item" data-template="[Person1] is a granddaughter of [Person2].">[Person1] is a granddaughter of [Person2].</div>
           <div class="template-item" data-template="[Person1] is a grandson of [Person2].">[Person1] is a grandson of [Person2].</div>
 
-          <div class="template-item" data-template="[Person1] is a half-sister of [Person2].">[Person1] is a half-sister of [Person2].</div>
-          <div class="template-item" data-template="[Person1] is a half-brother of [Person2].">[Person1] is a half-brother of [Person2].</div>
+          <div class="template-item" data-template="[Person1] is male.">[Person1] is male.</div>
+          <div class="template-item" data-template="[Person1] is female.">[Person1] is female.</div>
 
         </div>
         
         <!-- Question Templates -->
         <div class="template-list hidden" id="questionTemplates">
           <div class="template-item" data-template="Are [Person1] and [Person2] siblings?">Are [Person1] and [Person2] siblings?</div>
-          <div class="template-item" data-template="Are [Person1] and [Person2] half-siblings?">Are [Person1] and [Person2] half-siblings?</div>
           <div class="template-item" data-template="Is [Person1] the mother of [Person2]?">Is [Person1] the mother of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] the father of [Person2]?">Is [Person1] the father of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] a sister of [Person2]?">Is [Person1] a sister of [Person2]?</div>
@@ -118,15 +117,15 @@
           <div class="template-item" data-template="Is [Person1] a granddaughter of [Person2]?">Is [Person1] a granddaughter of [Person2]?</div>
           <div class="template-item" data-template="Is [Person1] a grandson of [Person2]?">Is [Person1] a grandson of [Person2]?</div>
 
-          <div class="template-item" data-template="Is [Person1] a half-sister of [Person2]?">Is [Person1] a half-sister of [Person2]?</div>
-          <div class="template-item" data-template="Is [Person1] a half-brother of [Person2]?">Is [Person1] a half-brother of [Person2]?</div>
+          <div class="template-item" data-template="Is [Person1] male?">Is [Person1] male?</div>
+          <div class="template-item" data-template="Is [Person1] female?">Is [Person1] female?</div>
+
+          <div class="template-item" data-template="Are [Person1] and [Person2] relatives?">Are [Person1] and [Person2] relatives?</div>
 
           <div class="template-item" data-template="Who are the nieces of [Person1]?">Who are the nieces of [Person1]?</div>
           <div class="template-item" data-template="Who are the nephews of [Person1]?">Who are the nephews of [Person1]?</div>
           <div class="template-item" data-template="Who are the cousins of [Person1]?">Who are the cousins of [Person1]?</div>
           <div class="template-item" data-template="Who are the grandchildren of [Person1]?">Who are the grandchildren of [Person1]?</div>
-
-          <div class="template-item" data-template="Who are the half-siblings of [Person1]?">Who are the half-siblings of [Person1]?</div>
         </div>
       </div>
       
@@ -503,8 +502,10 @@ function getFinalMessage() {
     } else if (node.classList && node.classList.contains('name-placeholder-input')) {
       const name = toNameCase(node.value.trim());
       message += name;
-    } else if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('template-cancel-btn')) {
-      // Skip the cancel button and traverse other elements
+    } else if (node.nodeType === Node.ELEMENT_NODE && 
+               !node.classList.contains('template-cancel-btn') && 
+               !node.classList.contains('add-person-btn')) {
+      // Skip the cancel button, add button, and traverse other elements
       for (let child of node.childNodes) {
         traverseAndBuild(child);
       }
